@@ -257,6 +257,72 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── PARTNERS ── */}
+      <section className="bg-white border-b border-gray-100 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex flex-wrap items-center gap-x-8 gap-y-6">
+            {/* Label */}
+            <div className="flex items-center gap-6 shrink-0">
+              <span className="text-2xl font-bold text-[#3a7d44]">Partners.</span>
+              <div className="w-px h-12 bg-[#e8a020]" />
+            </div>
+
+            {/* Co-op Bank */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-12 h-12 rounded-lg bg-[#1a5e2a] flex items-center justify-center">
+                <svg viewBox="0 0 40 40" className="w-8 h-8" fill="white">
+                  <rect x="4" y="4" width="14" height="14" rx="2" />
+                  <rect x="22" y="4" width="14" height="14" rx="2" />
+                  <rect x="4" y="22" width="14" height="14" rx="2" />
+                  <rect x="22" y="22" width="14" height="14" rx="2" />
+                </svg>
+              </div>
+              <div className="leading-tight">
+                <div className="text-[11px] font-bold text-[#1a5e2a] tracking-widest">CO-OP</div>
+                <div className="text-[15px] font-black text-[#1a5e2a] tracking-widest -mt-0.5">BANK</div>
+              </div>
+            </div>
+
+            {/* buyrentkenya.com */}
+            <div className="flex items-center gap-2 shrink-0">
+              <div className="w-10 h-10 rounded-full border-2 border-[#c0392b] flex items-center justify-center">
+                <svg viewBox="0 0 24 24" className="w-5 h-5 fill-[#c0392b]">
+                  <path d="M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7zm0 9.5c-1.38 0-2.5-1.12-2.5-2.5s1.12-2.5 2.5-2.5 2.5 1.12 2.5 2.5-1.12 2.5-2.5 2.5z" />
+                </svg>
+              </div>
+              <div className="leading-tight">
+                <div className="text-[15px] font-bold text-gray-800">
+                  buyrent<span className="text-[#c0392b]">kenya</span>.com
+                </div>
+                <div className="text-[10px] italic text-gray-500 -mt-0.5">it's that simple</div>
+              </div>
+            </div>
+
+            {/* PAM GOLDING */}
+            <div className="shrink-0 text-center">
+              <div className="text-[11px] tracking-[0.2em] text-gray-500 font-medium">PAM GOLDING</div>
+              <div className="text-[13px] tracking-[0.3em] text-gray-700 font-semibold border-t border-b border-gray-300 px-2 py-0.5 mt-0.5">
+                PROPERTIES
+              </div>
+            </div>
+
+            {/* PigiAme */}
+            <div className="flex items-center shrink-0">
+              <span className="text-[22px] font-black text-gray-900 tracking-tight">pigi</span>
+              <span className="relative text-[22px] font-black text-[#e63946] tracking-tight">
+                a
+                {/* wifi-like signal arcs */}
+                <span className="absolute -top-1 -right-0.5 flex flex-col items-center gap-px">
+                  <span className="w-2.5 h-1 border-t-2 border-r-2 border-[#e63946] rounded-tr-full" />
+                  <span className="w-1.5 h-0.5 border-t-2 border-r-2 border-[#e63946] rounded-tr-full opacity-70" />
+                </span>
+              </span>
+              <span className="text-[22px] font-black text-gray-900 tracking-tight ml-2">me</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── HOW IT WORKS ── */}
       <section className="py-24 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
