@@ -4,8 +4,10 @@ import { Home, Eye, EyeOff, ArrowLeft } from "lucide-react";
 
 export default function RegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [passwordMismatch, setPasswordMismatch] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "" });
+  const [form, setForm] = useState({ fullName: "", email: "", phone: "", password: "", confirmPassword: "" });
   const navigate = useNavigate();
 
   const update = (field: string, value: string) =>
@@ -13,6 +15,11 @@ export default function RegisterPage() {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    if (form.password !== form.confirmPassword) {
+      setPasswordMismatch(true);
+      return;
+    }
+    setPasswordMismatch(false);
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
@@ -155,6 +162,40 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Confirm Password
+              </label>
+              <div className="relative">
+                <input
+                  type={showConfirmPassword ? "text" : "password"}
+                  value={form.confirmPassword}
+                  onChange={(e) => {
+                    update("confirmPassword", e.target.value);
+                    setPasswordMismatch(false);
+                  }}
+                  placeholder="••••••••"
+                  required
+                  minLength={8}
+                  className={`${inputClass} pr-12 ${passwordMismatch ? "border-red-500/70 focus:border-red-500/70" : ""}`}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-300 transition-colors"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+              {passwordMismatch && (
+                <p className="text-red-400 text-xs mt-1.5">Passwords do not match</p>
+              )}
             </div>
 
             <button
