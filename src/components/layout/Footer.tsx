@@ -59,8 +59,8 @@ export default function Footer() {
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          {/* Brand */}
-          <div className="lg:col-span-2">
+          {/* Col 1 — Brand */}
+          <div>
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
                 <Home className="w-5 h-5 text-white" />
@@ -69,28 +69,14 @@ export default function Footer() {
                 Rent<span className="text-primary">mo</span>
               </span>
             </Link>
-            <p className="text-gray-400 text-sm leading-relaxed mb-6">
+            <p className="text-gray-400 text-sm leading-relaxed">
               Rentmo simplifies renting and helps Kenyans transition into
               homeownership through our innovative rent-to-own model. Build
               credit, access loans, and own your home.
             </p>
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-2 text-gray-400">
-                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
-                <span>Jahazi Building, 154 James Gichuru Road.<br />Nairobi, Kenya.</span>
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <Phone className="w-4 h-4 text-primary shrink-0" />
-                +254 700 000 000
-              </div>
-              <div className="flex items-center gap-2 text-gray-400">
-                <Mail className="w-4 h-4 text-primary shrink-0" />
-                hello@rentmo.co.ke
-              </div>
-            </div>
           </div>
 
-          {/* Links */}
+          {/* Cols 2–4 — Links */}
           {Object.entries(footerLinks).map(([title, links]) => (
             <div key={title}>
               <h4 className="text-white font-semibold mb-4">{title}</h4>
@@ -116,6 +102,29 @@ export default function Footer() {
               </ul>
             </div>
           ))}
+
+          {/* Col 5 — Contact */}
+          <div>
+            <h4 className="text-white font-semibold mb-4">Contact</h4>
+            <div className="space-y-3 text-sm">
+              <div className="flex items-start gap-2 text-gray-400">
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span>Jahazi Building, 154 James Gichuru Road.<br />Nairobi, Kenya.</span>
+              </div>
+              <div className="flex items-center gap-2 text-gray-400">
+                <Phone className="w-4 h-4 text-primary shrink-0" />
+                +254 757 551 875
+              </div>
+              <div className="flex items-center gap-2 text-gray-400">
+                <Phone className="w-4 h-4 text-primary shrink-0" />
+                +254 713 898 155
+              </div>
+              <div className="flex items-center gap-2 text-gray-400">
+                <Mail className="w-4 h-4 text-primary shrink-0" />
+                info@rentmo.online
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Bottom Bar */}
