@@ -28,10 +28,7 @@ function useInView(threshold = 0.25) {
     if (!el) return;
     const observer = new IntersectionObserver(
       ([entry]) => {
-        if (entry.isIntersecting) {
-          setInView(true);
-          observer.disconnect();
-        }
+        setInView(entry.isIntersecting);
       },
       { threshold }
     );
@@ -44,7 +41,10 @@ function useInView(threshold = 0.25) {
 function useCountUp(target: number, duration: number, started: boolean) {
   const [count, setCount] = useState(0);
   useEffect(() => {
-    if (!started) return;
+    if (!started) {
+      setCount(0);
+      return;
+    }
     let rafId: number;
     let startTs = 0;
     const step = (ts: number) => {

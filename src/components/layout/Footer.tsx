@@ -76,8 +76,8 @@ export default function Footer() {
             </p>
             <div className="space-y-2 text-sm">
               <div className="flex items-center gap-2 text-gray-400">
-                <MapPin className="w-4 h-4 text-primary shrink-0" />
-                Westlands, Nairobi, Kenya
+                <MapPin className="w-4 h-4 text-primary shrink-0 mt-0.5" />
+                <span>Jahazi Building, 154 James Gichuru Road.<br />Nairobi, Kenya.</span>
               </div>
               <div className="flex items-center gap-2 text-gray-400">
                 <Phone className="w-4 h-4 text-primary shrink-0" />
