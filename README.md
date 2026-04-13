@@ -1,1 +1,0 @@
-# Rentmo-Smart-Rental-Rent-to-Own-Platform
