@@ -7,7 +7,9 @@
       "Read(//tmp/**)",
       "Bash(pkill -f \"next dev\")",
       "Bash(npx tsc:*)",
-      "Bash(echo \"EXIT:$?\")"
+      "Bash(echo \"EXIT:$?\")",
+      "Bash(xargs ls:*)",
+      "Bash(wc -l /c/Users/Admin/clients/Rentmo-Smart-Rental-Rent-to-Own-Platform/src/app/*/page.tsx)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Admin\\.claude\\projects\\c--Users-Admin-clients-Rentmo-Smart-Rental-Rent-to-Own-Platform"
