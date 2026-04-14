@@ -23,18 +23,22 @@ export default function LandlordDashboard() {
   const occupancyRate = Math.round((myProperties.filter((p) => p.status === "occupied").length / myProperties.length) * 100);
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-500">Landlord Dashboard</p><h1 className="text-2xl font-bold text-navy">Grace Wanjiku 🏡</h1></div>
-            <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500">Landlord Dashboard</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy truncate">Grace Wanjiku 🏡</h1>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button className="relative p-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
               </button>
-              <button className="btn-primary !py-2 !px-4 flex items-center gap-2 text-sm">
-                <Plus className="w-4 h-4" />Add Property
+              <button className="btn-primary !py-2 !px-3 sm:!px-4 flex items-center gap-1.5 text-sm">
+                <Plus className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">Add Property</span>
               </button>
             </div>
           </div>

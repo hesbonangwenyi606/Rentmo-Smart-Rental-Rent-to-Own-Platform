@@ -42,29 +42,29 @@ const rtoProperties = properties.filter((p) => p.type === "rent-to-own");
 
 export default function RentToOwnPage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       {/* Hero */}
-      <section className="gradient-hero py-20">
+      <section className="gradient-hero py-14 sm:py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/30 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-6">
+          <div className="inline-flex items-center gap-2 bg-primary/20 border border-primary/30 text-primary rounded-full px-4 py-1.5 text-sm font-medium mb-5 sm:mb-6">
             <Star className="w-4 h-4" />
-            Rentmo&apos;s Flagship Program
+            Rentmo's Flagship Program
           </div>
-          <h1 className="text-5xl font-bold text-white leading-tight">
+          <h1 className="text-3xl sm:text-5xl font-bold text-white leading-tight">
             Rent today.
             <br />
             <span className="text-primary">Own tomorrow.</span>
           </h1>
-          <p className="text-gray-300 text-xl mt-6 max-w-2xl mx-auto">
+          <p className="text-gray-300 text-base sm:text-xl mt-4 sm:mt-6 max-w-2xl mx-auto">
             Every rent payment you make brings you closer to owning your home.
             No huge deposit. No bank gatekeeping. Just consistent payments.
           </p>
-          <div className="flex flex-wrap gap-4 justify-center mt-10">
-            <Link to="/properties?type=rent-to-own" className="btn-primary !px-8 !py-4 text-base">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mt-8 sm:mt-10 max-w-sm sm:max-w-none mx-auto">
+            <Link to="/properties?type=rent-to-own" className="btn-primary !px-8 !py-4 text-base justify-center">
               Browse Homes
-              <ArrowRight className="w-5 h-5 inline ml-2" />
+              <ArrowRight className="w-5 h-5 ml-2" />
             </Link>
-            <Link to="/calculator" className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2 text-base">
+            <Link to="/calculator" className="border-2 border-white/30 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2 text-base">
               <Calculator className="w-5 h-5" />
               Calculate Payments
             </Link>
@@ -230,19 +230,19 @@ export default function RentToOwnPage() {
       </section>
 
       {/* CTA */}
-      <section className="py-16 bg-primary">
+      <section className="py-14 sm:py-16 bg-primary">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <h2 className="text-3xl font-bold text-white mb-3">
+          <h2 className="text-2xl sm:text-3xl font-bold text-white mb-3">
             Your home is waiting for you.
           </h2>
-          <p className="text-white/80 text-lg mb-8">
+          <p className="text-white/80 text-base sm:text-lg mb-7 sm:mb-8">
             Join 1,200+ tenants already building equity every month with Rentmo.
           </p>
-          <div className="flex gap-4 justify-center">
-            <Link to="/register" className="bg-white text-primary font-bold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors shadow-lg">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-xs sm:max-w-none mx-auto">
+            <Link to="/register" className="bg-white text-primary font-bold px-8 py-4 rounded-xl hover:bg-gray-50 transition-colors shadow-lg text-center">
               Get Started Free
             </Link>
-            <Link to="/calculator" className="border-2 border-white/40 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors">
+            <Link to="/calculator" className="border-2 border-white/40 text-white font-semibold px-8 py-4 rounded-xl hover:bg-white/10 transition-colors text-center">
               Use Calculator
             </Link>
           </div>

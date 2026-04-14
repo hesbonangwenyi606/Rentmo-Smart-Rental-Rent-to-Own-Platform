@@ -67,24 +67,24 @@ export default function CalculatorPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       {/* Header */}
       <div className="bg-navy text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 sm:py-12">
           <div className="flex items-center gap-3 mb-4">
-            <div className="w-12 h-12 bg-primary/20 rounded-xl flex items-center justify-center">
-              <Calculator className="w-6 h-6 text-primary" />
+            <div className="w-10 h-10 sm:w-12 sm:h-12 bg-primary/20 rounded-xl flex items-center justify-center shrink-0">
+              <Calculator className="w-5 h-5 sm:w-6 sm:h-6 text-primary" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold">Rent-to-Own Calculator</h1>
-              <p className="text-gray-300 mt-0.5">See how renting can become owning.</p>
+              <h1 className="text-xl sm:text-3xl font-bold">Rent-to-Own Calculator</h1>
+              <p className="text-gray-300 text-sm sm:text-base mt-0.5">See how renting can become owning.</p>
             </div>
           </div>
 
           {/* Formula display */}
-          <div className="mt-6 bg-white/5 border border-white/10 rounded-xl p-4 inline-block">
+          <div className="mt-4 sm:mt-6 bg-white/5 border border-white/10 rounded-xl p-3 sm:p-4 block overflow-x-auto">
             <p className="text-xs text-gray-400 mb-1 font-mono">Monthly Payment Formula</p>
-            <p className="font-mono text-white text-sm">
+            <p className="font-mono text-white text-xs sm:text-sm whitespace-nowrap">
               M = P × [r(1+r)ⁿ] / [(1+r)ⁿ − 1]
             </p>
             <p className="text-xs text-gray-500 mt-2">
@@ -333,14 +333,14 @@ export default function CalculatorPage() {
             </div>
 
             {/* CTA */}
-            <div className="card bg-gradient-to-br from-navy to-navy-light text-white text-center p-8">
-              <h3 className="text-xl font-bold mb-2">Ready to start your ownership journey?</h3>
-              <p className="text-gray-300 text-sm mb-6">Browse rent-to-own properties and apply today.</p>
-              <div className="flex gap-3 justify-center">
-                <Link to="/properties?type=rent-to-own" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors">
+            <div className="card bg-gradient-to-br from-navy to-navy-light text-white text-center p-6 sm:p-8">
+              <h3 className="text-lg sm:text-xl font-bold mb-2">Ready to start your ownership journey?</h3>
+              <p className="text-gray-300 text-sm mb-5 sm:mb-6">Browse rent-to-own properties and apply today.</p>
+              <div className="flex flex-col sm:flex-row gap-3 justify-center max-w-xs sm:max-w-none mx-auto">
+                <Link to="/properties?type=rent-to-own" className="bg-primary text-white px-6 py-3 rounded-xl font-semibold hover:bg-primary-dark transition-colors text-center">
                   Browse Rent-to-Own
                 </Link>
-                <Link to="/register" className="bg-white/10 border border-white/30 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-colors">
+                <Link to="/register" className="bg-white/10 border border-white/30 text-white px-6 py-3 rounded-xl font-semibold hover:bg-white/20 transition-colors text-center">
                   Get Started Free
                 </Link>
               </div>

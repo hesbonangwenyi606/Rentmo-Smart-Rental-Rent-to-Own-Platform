@@ -66,7 +66,7 @@ export default function InsurancePage() {
   const activePlan = plans.find((p) => p.id === "basic");
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -77,26 +77,26 @@ export default function InsurancePage() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-10">
         {/* Active Plan Banner */}
-        <div className="card bg-gradient-to-r from-navy to-navy-light text-white flex flex-wrap items-center justify-between gap-4">
+        <div className="card bg-gradient-to-r from-navy to-navy-light text-white flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div className="flex items-center gap-4">
-            <div className="w-14 h-14 bg-white/10 rounded-xl flex items-center justify-center">
-              <Shield className="w-7 h-7 text-white" />
+            <div className="w-12 h-12 sm:w-14 sm:h-14 bg-white/10 rounded-xl flex items-center justify-center shrink-0">
+              <Shield className="w-6 h-6 sm:w-7 sm:h-7 text-white" />
             </div>
             <div>
               <p className="text-gray-300 text-sm">Active Plan</p>
-              <h2 className="text-xl font-bold">Basic Cover</h2>
-              <p className="text-gray-300 text-sm mt-0.5">Renews Jun 1, 2026 · KES 1,500/mo</p>
+              <h2 className="text-lg sm:text-xl font-bold">Basic Cover</h2>
+              <p className="text-gray-300 text-xs sm:text-sm mt-0.5">Renews Jun 1, 2026 · KES 1,500/mo</p>
             </div>
           </div>
-          <div className="flex flex-wrap gap-3">
+          <div className="flex flex-wrap gap-2 sm:gap-3 shrink-0">
             <button
               onClick={() => setShowClaimForm(true)}
-              className="bg-white/10 border border-white/30 text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
+              className="bg-white/10 border border-white/30 text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium hover:bg-white/20 transition-colors flex items-center gap-2"
             >
               <FileText className="w-4 h-4" />
               File a Claim
             </button>
-            <button className="bg-primary text-white px-4 py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors flex items-center gap-2">
+            <button className="bg-primary text-white px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-sm font-medium hover:bg-primary-dark transition-colors flex items-center gap-2">
               Upgrade Plan
               <ChevronRight className="w-4 h-4" />
             </button>
@@ -172,7 +172,7 @@ export default function InsurancePage() {
 
         {/* Plan Comparison */}
         <div>
-          <h2 className="font-bold text-navy text-2xl mb-2">Choose Your Plan</h2>
+          <h2 className="font-bold text-navy text-xl sm:text-2xl mb-2">Choose Your Plan</h2>
           <p className="text-gray-400 mb-6">Upgrade or change plan at any time.</p>
           <div className="grid md:grid-cols-2 gap-6 max-w-3xl">
             {plans.map((plan) => (

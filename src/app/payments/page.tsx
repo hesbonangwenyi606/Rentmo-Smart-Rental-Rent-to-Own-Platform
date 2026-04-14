@@ -48,7 +48,7 @@ export default function PaymentsPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -227,11 +227,11 @@ export default function PaymentsPage() {
                     </div>
 
                     <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-wrap items-center gap-1.5">
                         <p className="text-sm font-medium text-navy truncate">{txn.description}</p>
-                        <span className="text-xs text-gray-400 shrink-0">{txn.id}</span>
+                        <span className="text-xs text-gray-300 hidden sm:inline">{txn.id}</span>
                       </div>
-                      <div className="flex items-center gap-3 mt-0.5">
+                      <div className="flex flex-wrap items-center gap-2 mt-0.5">
                         <span className="text-xs text-gray-400">{txn.date}</span>
                         <span className={clsx(
                           "text-xs px-2 py-0.5 rounded-full font-medium",

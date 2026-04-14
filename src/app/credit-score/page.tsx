@@ -75,14 +75,14 @@ function GaugeBar({ score }: { score: number }) {
 
   return (
     <div>
-      <div className="flex justify-between items-end mb-3">
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-end gap-2 mb-3">
         <div>
-          <div className="text-6xl font-black text-navy">{score}</div>
-          <div className="text-lg font-semibold mt-1" style={{ color }}>{label}</div>
+          <div className="text-5xl sm:text-6xl font-black text-navy">{score}</div>
+          <div className="text-base sm:text-lg font-semibold mt-1" style={{ color }}>{label}</div>
         </div>
-        <div className="text-right text-sm text-gray-400">
+        <div className="sm:text-right text-sm text-gray-400">
           <p>Range: 300–850</p>
-          <p className="font-medium text-green-600 flex items-center gap-1 justify-end mt-1">
+          <p className="font-medium text-green-600 flex items-center gap-1 sm:justify-end mt-1">
             <ArrowUpRight className="w-4 h-4" />
             +80 pts in 12 months
           </p>
@@ -98,11 +98,11 @@ function GaugeBar({ score }: { score: number }) {
           style={{ left: `calc(${pct}% - 10px)` }}
         />
       </div>
-      <div className="flex justify-between text-xs text-gray-400 mt-1.5">
-        <span>300 Poor</span>
-        <span>580 Fair</span>
-        <span>700 Good</span>
-        <span>850 Exceptional</span>
+      <div className="flex justify-between text-[10px] sm:text-xs text-gray-400 mt-1.5">
+        <span>300</span>
+        <span className="hidden sm:inline">580 Fair</span>
+        <span className="hidden sm:inline">700 Good</span>
+        <span>850</span>
       </div>
     </div>
   );
@@ -110,7 +110,7 @@ function GaugeBar({ score }: { score: number }) {
 
 export default function CreditScorePage() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

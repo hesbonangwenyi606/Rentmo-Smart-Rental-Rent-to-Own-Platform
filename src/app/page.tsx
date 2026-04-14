@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import {
   Search,
@@ -14,9 +14,97 @@ import {
   Calculator,
   ChevronRight,
   Banknote,
+  X,
 } from "lucide-react";
 import PropertyCard from "@/components/properties/PropertyCard";
 import { properties, testimonials, stats } from "@/lib/data";
+
+function PromoPopup({ onClose }: { onClose: () => void }) {
+  return (
+    <div className="fixed inset-0 z-[999] flex items-center justify-center px-3 py-4 sm:px-4">
+      {/* Backdrop */}
+      <div className="absolute inset-0 bg-black/60 backdrop-blur-sm" onClick={onClose} />
+
+      {/* Card */}
+      <div className="relative z-10 w-full max-w-3xl rounded-2xl sm:rounded-3xl overflow-hidden shadow-2xl animate-fade-in">
+
+        {/* Banner body */}
+        <div
+          className="relative px-5 sm:px-10 py-8 sm:py-12"
+          style={{
+            backgroundImage: "url('https://images.unsplash.com/photo-1570129477492-45c003edd2be?w=1200&q=80')",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+          }}
+        >
+          {/* Dark overlay */}
+          <div className="absolute inset-0 bg-navy/75" />
+
+          {/* Rentmo logo top-left */}
+          <div className="absolute top-3 left-4 flex items-center gap-1.5 z-10">
+            <div className="w-6 h-6 bg-primary rounded-md flex items-center justify-center">
+              <Home className="w-3.5 h-3.5 text-white" />
+            </div>
+            <span className="text-white font-bold text-sm leading-none">
+              rent<span className="text-primary">mo</span>
+              <span className="block text-[9px] text-yellow-400 font-medium tracking-widest -mt-0.5">dwell well</span>
+            </span>
+          </div>
+
+          {/* Close button */}
+          <button
+            onClick={onClose}
+            className="absolute top-3 right-3 w-8 h-8 bg-black/60 hover:bg-black/90 text-white rounded-full flex items-center justify-center transition-colors z-20"
+            aria-label="Close"
+          >
+            <X className="w-4 h-4" />
+          </button>
+
+          {/* Layout: stacked on mobile, row on sm+ */}
+          <div className="relative z-10 pt-6 flex flex-col sm:flex-row items-center gap-4 sm:gap-0">
+            {/* Left badge */}
+            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-yellow-400 flex flex-col items-center justify-center text-center shrink-0 shadow-lg">
+              <span className="text-navy font-black text-base sm:text-lg leading-tight">No</span>
+              <span className="text-navy font-black text-base sm:text-lg leading-tight">Fixed</span>
+              <span className="text-navy font-black text-base sm:text-lg leading-tight">Term</span>
+            </div>
+
+            {/* Centre text */}
+            <div className="flex-1 text-center px-4 sm:px-6">
+              <p className="text-white/90 text-sm sm:text-xl font-semibold mb-1">Blacklisted or No credit score?</p>
+              <p
+                className="font-black text-3xl sm:text-5xl leading-tight"
+                style={{ color: "#f4c430", textShadow: "0 2px 12px rgba(0,0,0,0.5)" }}
+              >
+                RENT-TO-OWN
+              </p>
+            </div>
+
+            {/* Right badge */}
+            <div className="w-20 h-20 sm:w-28 sm:h-28 rounded-full bg-[#1a5e2a] border-4 border-yellow-400 flex flex-col items-center justify-center text-center shrink-0 shadow-lg">
+              <span className="text-yellow-400 font-black text-2xl sm:text-3xl leading-none">10%</span>
+              <span className="text-white font-bold text-xs sm:text-sm">OFF</span>
+            </div>
+          </div>
+        </div>
+
+        {/* CTA bar */}
+        <div className="bg-white px-5 sm:px-8 py-4 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <p className="text-sm sm:text-base font-semibold text-gray-800 text-center sm:text-left">
+            Start your rent-to-own journey today — no credit score needed.
+          </p>
+          <Link
+            to="/rent-to-own"
+            onClick={onClose}
+            className="shrink-0 w-full sm:w-auto text-center bg-primary text-white font-bold px-6 py-2.5 rounded-xl hover:bg-primary-dark transition-colors"
+          >
+            Learn More
+          </Link>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 // ── Animation helpers ────────────────────────────────────────────────────────
 
@@ -125,10 +213,12 @@ const features = [
 export default function LandingPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedType, setSelectedType] = useState("All Types");
+  const [showPromo, setShowPromo] = useState(true);
   const navigate = useNavigate();
 
   const featuredProperties = properties.slice(0, 3);
   const { ref: statsRef, inView: statsInView } = useInView();
+  const closePromo = useCallback(() => setShowPromo(false), []);
 
   const handleSearch = () => {
     navigate(`/properties?q=${searchQuery}&type=${selectedType}`);
@@ -136,31 +226,34 @@ export default function LandingPage() {
 
   return (
     <div className="overflow-x-hidden">
+      {/* ── PROMO POPUP ── */}
+      {showPromo && <PromoPopup onClose={closePromo} />}
+
       {/* ── HERO ── */}
-      <section className="gradient-hero min-h-[92vh] flex items-center relative overflow-hidden">
+      <section className="gradient-hero min-h-[88vh] sm:min-h-[92vh] flex items-center relative overflow-hidden">
         <div className="absolute inset-0 opacity-5">
           <div className="absolute inset-0" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "40px 40px" }} />
         </div>
         <div className="absolute top-20 right-20 w-96 h-96 bg-primary/20 rounded-full blur-3xl" />
         <div className="absolute bottom-20 left-20 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl" />
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-16 pb-20 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12 sm:pt-16 pb-16 sm:pb-20 relative z-10">
+          <div className="grid lg:grid-cols-2 gap-10 lg:gap-16 items-center">
             <div className="animate-fade-in">
               <div className="inline-flex items-center gap-2 bg-white/10 border border-white/20 text-white rounded-full px-4 py-1.5 text-sm font-medium mb-6">
                 <span className="w-2 h-2 bg-green-400 rounded-full animate-pulse" />
                 2,400+ Verified Properties in Nairobi
               </div>
-              <h1 className="text-5xl lg:text-6xl font-bold text-white leading-tight">
+              <h1 className="text-4xl sm:text-5xl lg:text-6xl font-bold text-white leading-tight">
                 Find Your Home.<br />
                 <span className="text-primary">Rent Smart.</span><br />
                 <span className="text-white/80">Then Own It.</span>
               </h1>
-              <p className="text-gray-300 text-lg mt-6 leading-relaxed max-w-lg">
+              <p className="text-gray-300 text-base sm:text-lg mt-5 sm:mt-6 leading-relaxed max-w-lg">
                 Rentmo simplifies renting in Nairobi while helping you build credit, access rent loans, and transition into homeownership through our innovative rent-to-own model.
               </p>
 
-              <div className="mt-8 bg-white rounded-2xl shadow-2xl p-2 flex flex-col sm:flex-row gap-2">
+              <div className="mt-6 sm:mt-8 bg-white rounded-2xl shadow-2xl p-2 flex flex-col sm:flex-row gap-2">
                 <div className="flex-1 flex items-center gap-2 px-3">
                   <MapPin className="w-5 h-5 text-primary shrink-0" />
                   <input
@@ -172,16 +265,16 @@ export default function LandingPage() {
                     onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                   />
                 </div>
-                <div className="flex gap-2 items-center px-2 sm:border-l border-gray-100">
+                <div className="flex gap-2 items-center px-3 sm:px-2 border-t sm:border-t-0 sm:border-l border-gray-100 pt-2 sm:pt-0">
                   <select
-                    className="text-sm text-gray-600 outline-none bg-transparent py-2 pr-2"
+                    className="text-sm text-gray-600 outline-none bg-transparent py-2 pr-2 w-full sm:w-auto"
                     value={selectedType}
                     onChange={(e) => setSelectedType(e.target.value)}
                   >
                     {propertyTypes.map((t) => <option key={t}>{t}</option>)}
                   </select>
                 </div>
-                <button onClick={handleSearch} className="btn-primary !rounded-xl whitespace-nowrap flex items-center gap-2">
+                <button onClick={handleSearch} className="btn-primary !rounded-xl whitespace-nowrap flex items-center justify-center gap-2">
                   <Search className="w-4 h-4" />
                   Search
                 </button>
@@ -401,10 +494,10 @@ export default function LandingPage() {
           <div className="w-full h-full" style={{ backgroundImage: "radial-gradient(circle at 2px 2px, white 1px, transparent 0)", backgroundSize: "32px 32px" }} />
         </div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid lg:grid-cols-2 gap-16 items-center">
+          <div className="grid lg:grid-cols-2 gap-8 lg:gap-16 items-center">
             <div>
               <span className="text-primary font-semibold text-sm uppercase tracking-wider">Rent-to-Own</span>
-              <h2 className="text-4xl font-bold text-white mt-2 leading-tight">
+              <h2 className="text-3xl sm:text-4xl font-bold text-white mt-2 leading-tight">
                 Your rent is your<br /><span className="text-primary">mortgage payment</span>
               </h2>
               <p className="text-gray-300 mt-5 leading-relaxed text-lg">
@@ -418,9 +511,9 @@ export default function LandingPage() {
                   </li>
                 ))}
               </ul>
-              <div className="flex gap-4 mt-10">
-                <Link to="/rent-to-own" className="btn-primary">Learn More</Link>
-                <Link to="/calculator" className="border-2 border-white/30 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center gap-2">
+              <div className="flex flex-col sm:flex-row gap-3 mt-8 sm:mt-10">
+                <Link to="/rent-to-own" className="btn-primary text-center">Learn More</Link>
+                <Link to="/calculator" className="border-2 border-white/30 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors flex items-center justify-center gap-2">
                   <Calculator className="w-4 h-4" /> Try Calculator
                 </Link>
               </div>
@@ -468,7 +561,7 @@ export default function LandingPage() {
             <span className="text-primary font-semibold text-sm uppercase tracking-wider">Stories</span>
             <h2 className="section-heading mt-2">What our users say</h2>
           </div>
-          <div className="grid md:grid-cols-3 gap-8">
+          <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-6 sm:gap-8">
             {testimonials.map((t) => (
               <div key={t.id} className="card-hover">
                 <div className="flex gap-0.5 mb-4">

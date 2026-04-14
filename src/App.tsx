@@ -27,7 +27,7 @@ function AppContent() {
   return (
     <div className="min-h-screen flex flex-col">
       {!isAuth && <Navbar />}
-      <main className="flex-1">
+      <main key={pathname} className="flex-1 page-enter">
         <Routes>
           <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />

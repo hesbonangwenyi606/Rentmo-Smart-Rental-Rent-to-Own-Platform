@@ -31,22 +31,30 @@ const recentUsers = [
 
 export default function AdminDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       <div className="bg-navy text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div><p className="text-gray-400 text-sm">Admin Control Panel</p><h1 className="text-2xl font-bold">Rentmo Admin 🛡️</h1></div>
-            <div className="flex items-center gap-3">
-              <div className="relative">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-gray-400 text-xs sm:text-sm">Admin Control Panel</p>
+              <h1 className="text-xl sm:text-2xl font-bold truncate">Rentmo Admin 🛡️</h1>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
+              <div className="relative hidden sm:block">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Search users, properties..." className="pl-9 pr-4 py-2 bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-xl text-sm outline-none focus:bg-white/20 transition-colors w-56" />
+                <input type="text" placeholder="Search users, properties..." className="pl-9 pr-4 py-2 bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-xl text-sm outline-none focus:bg-white/20 transition-colors w-40 lg:w-56" />
               </div>
               <button className="relative p-2 rounded-xl border border-white/20 hover:bg-white/10 transition-colors">
                 <Bell className="w-5 h-5 text-white" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
               </button>
-              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center font-bold text-sm">AD</div>
+              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-xl flex items-center justify-center font-bold text-xs sm:text-sm">AD</div>
             </div>
+          </div>
+          {/* Mobile search bar */}
+          <div className="mt-3 sm:hidden relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+            <input type="text" placeholder="Search users, properties..." className="w-full pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-xl text-sm outline-none focus:bg-white/20 transition-colors" />
           </div>
         </div>
       </div>

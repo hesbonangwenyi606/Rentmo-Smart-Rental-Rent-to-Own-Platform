@@ -28,7 +28,7 @@ function ScoreGauge({ score }: { score: number }) {
   const label = score >= 750 ? "Excellent" : score >= 700 ? "Good" : score >= 650 ? "Fair" : "Needs Work";
   return (
     <div className="flex flex-col items-center">
-      <div className="text-5xl font-black text-navy mb-1">{score}</div>
+      <div className="text-4xl sm:text-5xl font-black text-navy mb-1">{score}</div>
       <div className="text-sm font-semibold mb-3" style={{ color }}>{label}</div>
       <div className="w-full bg-gray-100 rounded-full h-3 overflow-hidden">
         <div className="h-full rounded-full transition-all duration-700" style={{ width: `${pct}%`, backgroundColor: color }} />
@@ -40,17 +40,20 @@ function ScoreGauge({ score }: { score: number }) {
 
 export default function TenantDashboard() {
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 page-content">
       <div className="bg-white border-b border-gray-100">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
-          <div className="flex items-center justify-between">
-            <div><p className="text-sm text-gray-500">Good morning,</p><h1 className="text-2xl font-bold text-navy">James Kamau 👋</h1></div>
-            <div className="flex items-center gap-3">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
+          <div className="flex items-center justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs sm:text-sm text-gray-500">Good morning,</p>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy truncate">James Kamau 👋</h1>
+            </div>
+            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button className="relative p-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                 <Bell className="w-5 h-5 text-gray-600" />
                 <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
               </button>
-              <div className="w-10 h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-sm">JK</div>
+              <div className="w-8 h-8 sm:w-10 sm:h-10 bg-primary/10 text-primary rounded-xl flex items-center justify-center font-bold text-xs sm:text-sm">JK</div>
             </div>
           </div>
         </div>
@@ -70,9 +73,9 @@ export default function TenantDashboard() {
                 <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center`}><stat.icon className="w-5 h-5" /></div>
                 <ArrowUpRight className="w-4 h-4 text-green-500" />
               </div>
-              <div className="text-2xl font-bold text-navy">{stat.value}</div>
-              <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
-              <div className="text-xs text-green-600 font-medium mt-1">{stat.sub}</div>
+              <div className="text-xl sm:text-2xl font-bold text-navy">{stat.value}</div>
+              <div className="text-xs text-gray-400 mt-1 truncate">{stat.label}</div>
+              <div className="text-xs text-green-600 font-medium mt-1 truncate">{stat.sub}</div>
             </div>
           ))}
         </div>

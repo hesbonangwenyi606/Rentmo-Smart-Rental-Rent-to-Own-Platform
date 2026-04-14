@@ -38,25 +38,25 @@ export default function Footer() {
     <footer className="bg-navy text-gray-300">
       {/* CTA Banner */}
       <div className="bg-primary">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex flex-col md:flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 sm:py-12 flex flex-col md:flex-row items-center justify-between gap-5 sm:gap-6 text-center md:text-left">
           <div>
-            <h3 className="text-2xl font-bold text-white">
+            <h3 className="text-xl sm:text-2xl font-bold text-white">
               Start your homeownership journey today
             </h3>
-            <p className="text-white/80 mt-1">
+            <p className="text-white/80 mt-1 text-sm sm:text-base">
               Join thousands of Kenyans renting smart with Rentmo.
             </p>
           </div>
-          <div className="flex gap-3 shrink-0">
+          <div className="flex flex-col sm:flex-row gap-3 shrink-0 w-full sm:w-auto">
             <Link
               to="/register"
-              className="bg-white text-primary font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-lg"
+              className="bg-white text-primary font-semibold px-6 py-3 rounded-xl hover:bg-gray-50 transition-colors shadow-lg text-center"
             >
               Get Started Free
             </Link>
             <Link
               to="/properties"
-              className="border-2 border-white/60 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors"
+              className="border-2 border-white/60 text-white font-semibold px-6 py-3 rounded-xl hover:bg-white/10 transition-colors text-center"
             >
               Browse Homes
             </Link>
@@ -66,9 +66,9 @@ export default function Footer() {
 
       {/* Main Footer */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-14">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10">
-          {/* Col 1 — Brand */}
-          <div>
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-8 lg:gap-10">
+          {/* Col 1 — Brand (full width on mobile) */}
+          <div className="col-span-2 sm:col-span-3 lg:col-span-1">
             <Link to="/" className="flex items-center gap-2 mb-4">
               <div className="w-9 h-9 bg-primary rounded-lg flex items-center justify-center">
                 <Home className="w-5 h-5 text-white" />
@@ -112,7 +112,7 @@ export default function Footer() {
           ))}
 
           {/* Col 5 — Contact */}
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <h4 className="text-white font-semibold mb-4">Contact</h4>
             <div className="space-y-3 text-sm">
               <a
@@ -141,16 +141,21 @@ export default function Footer() {
         </div>
 
         {/* Bottom Bar */}
-        <div className="border-t border-white/10 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <p className="text-sm text-gray-500">
-            © 2026 Rentmo Technologies Ltd. All rights reserved.
-          </p>
-          <div className="flex items-center gap-3">
+        <div className="border-t border-white/10 mt-10 sm:mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4">
+          <div className="text-center md:text-left">
+            <p className="text-sm text-gray-500">
+              © 2026 Rentmo Technologies Ltd. All rights reserved.
+            </p>
+            <p className="text-xs text-gray-600 mt-0.5">
+              Rent Smart. Build Credit. Own Your Home.
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
             {[Facebook, Twitter, Instagram, Linkedin].map((Icon, i) => (
               <a
                 key={i}
                 href="#"
-                className="w-9 h-9 bg-white/10 hover:bg-primary rounded-lg flex items-center justify-center transition-colors"
+                className="w-9 h-9 bg-white/10 hover:bg-primary rounded-xl flex items-center justify-center transition-all duration-200 hover:scale-110"
               >
                 <Icon className="w-4 h-4 text-white" />
               </a>
