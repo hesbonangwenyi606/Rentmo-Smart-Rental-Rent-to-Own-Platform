@@ -18,10 +18,23 @@ const loanHistory = [
 ];
 
 const loanProducts = [
-  { name: "Quick Rent Loan", amount: "Up to KES 100K", duration: "30–60 days", rate: "3% flat fee", minScore: 580, icon: Banknote, color: "bg-primary/10 text-primary" },
+  { name: "Quick Rent Loan", amount: "Up to KES 100K", duration: "30–60 days", rate: "10% flat fee", minScore: 580, icon: Banknote, color: "bg-primary/10 text-primary" },
   { name: "Emergency Cover", amount: "Up to KES 50K", duration: "30 days", rate: "1.5% flat fee", minScore: 550, icon: AlertCircle, color: "bg-yellow-50 text-yellow-600" },
   { name: "Multi-Month Loan", amount: "Up to KES 250K", duration: "3–6 months", rate: "5% flat fee", minScore: 620, icon: TrendingUp, color: "bg-green-50 text-green-600" },
 ];
+
+const DURATIONS = ["30", "45", "60"];
+const BASE_RATE = 0.10;
+const RATE_STEP = 0.02;
+
+function getFeeRate(duration: string): number {
+  const idx = DURATIONS.indexOf(duration);
+  return BASE_RATE + (idx >= 0 ? idx : 0) * RATE_STEP;
+}
+
+function feeLabel(duration: string): string {
+  return `${(getFeeRate(duration) * 100).toFixed(0)}%`;
+}
 
 export default function LoansPage() {
   const [step, setStep] = useState<"browse" | "apply" | "review" | "done">("browse");
@@ -66,7 +79,7 @@ export default function LoansPage() {
               <p className="text-green-600 text-xs">Max Limit</p>
             </div>
             <div className="text-center">
-              <p className="font-bold text-green-800 text-lg">3%</p>
+              <p className="font-bold text-green-800 text-lg">10%</p>
               <p className="text-green-600 text-xs">Lowest Rate</p>
             </div>
             <div className="text-center">
@@ -146,18 +159,19 @@ export default function LoansPage() {
                   <div>
                     <label className="block text-sm font-medium text-navy mb-1.5">Repayment Period</label>
                     <div className="grid grid-cols-3 gap-3">
-                      {["30", "45", "60"].map((d) => (
+                      {DURATIONS.map((d) => (
                         <button
                           key={d}
                           onClick={() => update("duration", d)}
                           className={clsx(
-                            "p-3 rounded-xl border-2 text-center text-sm font-medium transition-all",
+                            "p-3 rounded-xl border-2 text-center transition-all",
                             form.duration === d
                               ? "border-primary bg-primary/5 text-primary"
                               : "border-gray-200 text-gray-600 hover:border-gray-300"
                           )}
                         >
-                          {d} Days
+                          <div className="text-sm font-medium">{d} Days</div>
+                          <div className="text-xs mt-0.5 opacity-70">{feeLabel(d)} fee</div>
                         </button>
                       ))}
                     </div>
@@ -172,12 +186,12 @@ export default function LoansPage() {
                           <span className="font-medium">KES {Number(form.amount).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between">
-                          <span className="text-gray-500">Flat Fee (3%)</span>
-                          <span className="font-medium">KES {(Number(form.amount) * 0.03).toLocaleString()}</span>
+                          <span className="text-gray-500">Flat Fee ({feeLabel(form.duration)})</span>
+                          <span className="font-medium">KES {(Number(form.amount) * getFeeRate(form.duration)).toLocaleString()}</span>
                         </div>
                         <div className="flex justify-between font-bold border-t border-gray-200 pt-2 mt-2">
                           <span className="text-navy">Total Repayment</span>
-                          <span className="text-primary">KES {(Number(form.amount) * 1.03).toLocaleString()}</span>
+                          <span className="text-primary">KES {(Number(form.amount) * (1 + getFeeRate(form.duration))).toLocaleString()}</span>
                         </div>
                       </div>
                     </div>
@@ -203,8 +217,8 @@ export default function LoansPage() {
                     ["Amount", `KES ${Number(form.amount).toLocaleString()}`],
                     ["Purpose", form.purpose],
                     ["Repayment", `${form.duration} days`],
-                    ["Fee", `KES ${(Number(form.amount) * 0.03).toLocaleString()} (3% flat)`],
-                    ["Total Repayment", `KES ${(Number(form.amount) * 1.03).toLocaleString()}`],
+                    ["Fee", `KES ${(Number(form.amount) * getFeeRate(form.duration)).toLocaleString()} (${feeLabel(form.duration)} flat)`],
+                    ["Total Repayment", `KES ${(Number(form.amount) * (1 + getFeeRate(form.duration))).toLocaleString()}`],
                     ["Disbursement", "Within 2 hours via M-Pesa"],
                   ].map(([label, value]) => (
                     <div key={label} className="flex justify-between py-2 border-b border-gray-100">
