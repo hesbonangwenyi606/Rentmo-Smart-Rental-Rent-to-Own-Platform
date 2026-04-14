@@ -264,6 +264,33 @@ export async function recordPayment(req: Request, res: Response) {
   R.created(res, payment);
 }
 
+export async function getById(req: Request, res: Response) {
+  const payment = await prisma.payment.findUnique({
+    where: { id: req.params.id },
+  });
+
+  if (!payment) {
+    R.notFound(res, "Payment");
+    return;
+  }
+
+  if (payment.tenantId !== req.user!.userId && req.user!.role !== "ADMIN") {
+    R.forbidden(res);
+    return;
+  }
+
+  R.success(res, {
+    id: payment.id,
+    status: payment.status,
+    amount: payment.amount,
+    method: payment.method,
+    mpesaReceiptNo: payment.mpesaReceiptNo,
+    transactionRef: payment.transactionRef,
+    description: payment.description,
+    createdAt: payment.createdAt,
+  });
+}
+
 export async function queryStatus(req: Request, res: Response) {
   const { checkoutRequestId } = req.params;
   try {

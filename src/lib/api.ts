@@ -241,6 +241,18 @@ export const payments = {
       message: string;
     }>("/payments/mpesa/initiate", { method: "POST", body: JSON.stringify(data) }),
 
+  getById: (id: string) =>
+    request<{
+      id: string;
+      status: "PENDING" | "COMPLETED" | "FAILED" | "REFUNDED";
+      amount: number;
+      method: string;
+      mpesaReceiptNo?: string;
+      transactionRef?: string;
+      description: string;
+      createdAt: string;
+    }>(`/payments/${id}`),
+
   simulate: (paymentId: string) =>
     request<{ receipt: string }>(`/payments/simulate/${paymentId}`, { method: "POST" }),
 

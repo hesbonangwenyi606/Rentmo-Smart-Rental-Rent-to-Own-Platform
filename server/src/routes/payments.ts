@@ -13,5 +13,6 @@ router.get("/mpesa/status/:checkoutRequestId", authenticate, ctrl.queryStatus);
 router.post("/simulate/:paymentId", authenticate, ctrl.simulatePayment);
 router.post("/record", authenticate, ctrl.recordPayment);
 router.get("/receipt/:id", authenticate, ctrl.getReceipt);
+router.get("/:id", authenticate, ctrl.getById);
 
 export default router;
