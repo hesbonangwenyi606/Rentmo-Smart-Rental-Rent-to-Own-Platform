@@ -12,8 +12,12 @@ export default defineConfig({
   server: {
     port: 5173,
     proxy: {
-      // All /api requests are forwarded to the Express server during development
       "/api": {
+        target: "http://localhost:3001",
+        changeOrigin: true,
+        secure: false,
+      },
+      "/uploads": {
         target: "http://localhost:3001",
         changeOrigin: true,
         secure: false,

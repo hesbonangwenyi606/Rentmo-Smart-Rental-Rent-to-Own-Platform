@@ -99,6 +99,22 @@ async function tryRefreshToken(): Promise<boolean> {
   }
 }
 
+// ─── File Upload ─────────────────────────────────────────────────────────────
+
+export async function uploadImage(file: File): Promise<string> {
+  const token = getAccessToken();
+  const formData = new FormData();
+  formData.append("image", file);
+  const res = await fetch(`${BASE_URL}/upload`, {
+    method: "POST",
+    headers: token ? { Authorization: `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const data = await res.json() as { success: boolean; data: { url: string }; message: string };
+  if (!res.ok) throw new ApiError(data.message || "Upload failed", res.status);
+  return data.data.url;
+}
+
 // ─── Auth ─────────────────────────────────────────────────────────────────────
 
 export interface User {

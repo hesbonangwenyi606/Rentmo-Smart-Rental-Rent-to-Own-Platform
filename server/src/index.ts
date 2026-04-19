@@ -3,6 +3,7 @@ import cors from "cors";
 import helmet from "helmet";
 import morgan from "morgan";
 import rateLimit from "express-rate-limit";
+import path from "path";
 import { config } from "./config";
 import { errorHandler, notFoundHandler } from "./middleware/errorHandler";
 
@@ -16,8 +17,12 @@ import creditScoreRoutes from "./routes/creditScore";
 import userRoutes from "./routes/users";
 import adminRoutes from "./routes/admin";
 import notificationRoutes from "./routes/notifications";
+import uploadRoutes from "./routes/upload";
 
 const app = express();
+
+// ─── Static uploads ───────────────────────────────────────────────────────────
+app.use("/uploads", express.static(path.join(__dirname, "../uploads")));
 
 // ─── Security & Parsing ───────────────────────────────────────────────────────
 app.use(helmet());
@@ -81,6 +86,7 @@ app.use("/api/credit-score", creditScoreRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/upload", uploadRoutes);
 
 // ─── Error Handling ───────────────────────────────────────────────────────────
 app.use(notFoundHandler);
