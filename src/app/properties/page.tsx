@@ -1,9 +1,7 @@
-"use client";
-
-import { useState, useMemo } from "react";
+import { useState, useEffect } from "react";
 import { Search, SlidersHorizontal, MapPin, X, Grid3X3, List } from "lucide-react";
 import PropertyCard from "@/components/properties/PropertyCard";
-import { properties } from "@/lib/data";
+import { properties as propertiesApi, Property } from "@/lib/api";
 import { clsx } from "clsx";
 
 const neighborhoods = ["All", "Kilimani", "Karen", "Westlands", "Lavington", "Kileleshwa", "Parklands"];
@@ -18,19 +16,29 @@ export default function PropertiesPage() {
   const [priceMax, setPriceMax] = useState(200000);
   const [showFilters, setShowFilters] = useState(false);
   const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
+  const [results, setResults] = useState<Property[]>([]);
+  const [total, setTotal] = useState(0);
+  const [loading, setLoading] = useState(true);
 
-  const filtered = useMemo(() => {
-    return properties.filter((p) => {
-      if (search && !p.title.toLowerCase().includes(search.toLowerCase()) && !p.location.toLowerCase().includes(search.toLowerCase())) return false;
-      if (selectedArea !== "All" && p.neighborhood !== selectedArea) return false;
-      if (selectedType !== "All" && p.type !== selectedType) return false;
-      if (selectedBeds !== "Any") {
-        const beds = selectedBeds === "4+" ? 4 : parseInt(selectedBeds);
-        if (selectedBeds === "4+" ? p.bedrooms < beds : p.bedrooms !== beds) return false;
-      }
-      if (p.price > priceMax) return false;
-      return true;
-    });
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setLoading(true);
+      propertiesApi
+        .list({
+          search: search || undefined,
+          neighborhood: selectedArea !== "All" ? selectedArea : undefined,
+          type: selectedType !== "All" ? selectedType : undefined,
+          bedrooms: selectedBeds !== "Any" ? selectedBeds : undefined,
+          priceMax,
+        })
+        .then((res) => {
+          setResults(res.data);
+          setTotal(res.pagination?.total ?? res.data.length);
+        })
+        .catch(() => {})
+        .finally(() => setLoading(false));
+    }, 300);
+    return () => clearTimeout(timer);
   }, [search, selectedArea, selectedType, selectedBeds, priceMax]);
 
   return (
@@ -43,7 +51,6 @@ export default function PropertiesPage() {
             Find your perfect home in Nairobi — rent or own.
           </p>
 
-          {/* Search bar */}
           <div className="mt-5 sm:mt-6 flex gap-2 sm:gap-3">
             <div className="flex-1 relative">
               <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
@@ -84,7 +91,6 @@ export default function PropertiesPage() {
         <div className="bg-white border-b border-gray-200 shadow-sm">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5">
             <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-5">
-              {/* Area */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-2">Neighborhood</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -105,7 +111,6 @@ export default function PropertiesPage() {
                 </div>
               </div>
 
-              {/* Type */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-2">Property Type</label>
                 <div className="flex flex-wrap gap-1.5">
@@ -126,7 +131,6 @@ export default function PropertiesPage() {
                 </div>
               </div>
 
-              {/* Bedrooms */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-2">Bedrooms</label>
                 <div className="flex gap-1.5">
@@ -147,7 +151,6 @@ export default function PropertiesPage() {
                 </div>
               </div>
 
-              {/* Price */}
               <div>
                 <label className="block text-xs font-semibold text-gray-500 mb-2">
                   Max Price: KES {priceMax.toLocaleString()}/mo
@@ -199,7 +202,7 @@ export default function PropertiesPage() {
         <div className="flex items-center justify-between mb-6">
           <div>
             <h2 className="font-bold text-navy text-lg">
-              {filtered.length} Properties Found
+              {loading ? "Loading..." : `${total} Properties Found`}
             </h2>
             <p className="text-sm text-gray-400 mt-0.5">
               {selectedArea !== "All" ? `in ${selectedArea}` : "across Nairobi"}
@@ -222,7 +225,11 @@ export default function PropertiesPage() {
           </div>
         </div>
 
-        {filtered.length === 0 ? (
+        {loading ? (
+          <div className="flex justify-center py-20">
+            <div className="w-10 h-10 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : results.length === 0 ? (
           <div className="text-center py-24">
             <div className="text-6xl mb-4">🏚️</div>
             <h3 className="text-xl font-bold text-navy mb-2">No properties found</h3>
@@ -249,7 +256,7 @@ export default function PropertiesPage() {
                 : "grid-cols-1 max-w-3xl"
             )}
           >
-            {filtered.map((p) => (
+            {results.map((p) => (
               <PropertyCard key={p.id} property={p} />
             ))}
           </div>
