@@ -100,6 +100,13 @@ export default function RegisterPage() {
             <div className="flex-1 h-px bg-white/15" />
           </div>
 
+          {error && (
+            <div className="flex items-center gap-2.5 bg-red-500/10 border border-red-500/30 text-red-400 rounded-2xl px-4 py-3 text-sm mb-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
+
           {/* Form */}
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>

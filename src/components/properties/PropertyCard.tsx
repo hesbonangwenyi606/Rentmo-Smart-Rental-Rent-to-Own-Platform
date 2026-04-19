@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { Bed, Bath, Maximize2, MapPin, Star, TrendingUp, Heart } from "lucide-react";
 import { clsx } from "clsx";
-import type { Property } from "@/lib/data";
+import type { Property } from "@/lib/api";
 
 interface PropertyCardProps {
   property: Property;
