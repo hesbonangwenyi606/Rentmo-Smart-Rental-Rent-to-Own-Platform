@@ -1,15 +1,8 @@
-"use client";
-
 import { useState, useEffect, useRef } from "react";
-import { Link, useLocation } from "react-router-dom";
-import {
-  Home,
-  Menu,
-  X,
-  ChevronDown,
-  LogIn,
-} from "lucide-react";
+import { Link, useLocation, useNavigate } from "react-router-dom";
+import { Home, Menu, X, LogIn, LogOut, LayoutDashboard, ChevronDown, User } from "lucide-react";
 import { clsx } from "clsx";
+import { useAuth } from "@/contexts/AuthContext";
 
 const navLinks = [
   { label: "Properties", href: "/properties" },
@@ -17,45 +10,52 @@ const navLinks = [
   { label: "Calculator", href: "/calculator" },
 ];
 
-const dashboardLinks = [
-  { label: "Tenant Dashboard", href: "/dashboard" },
-  { label: "Landlord Dashboard", href: "/dashboard/landlord" },
-  { label: "Admin Dashboard", href: "/dashboard/admin" },
-];
+function getDashboardLink(role?: string) {
+  if (role === "ADMIN") return { label: "Admin Dashboard", href: "/dashboard/admin" };
+  if (role === "LANDLORD") return { label: "Landlord Dashboard", href: "/dashboard/landlord" };
+  return { label: "My Dashboard", href: "/dashboard" };
+}
 
 export default function Navbar() {
-  const [isOpen, setIsOpen]     = useState(false);
-  const [dashOpen, setDashOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { pathname } = useLocation();
-  const dropdownRef = useRef<HTMLDivElement>(null);
+  const navigate = useNavigate();
+  const { isAuthenticated, user, logout } = useAuth();
+  const userMenuRef = useRef<HTMLDivElement>(null);
 
-  const isActive = (href: string) => pathname === href;
+  const isActive = (href: string) => pathname === href || pathname.startsWith(href + "/");
 
-  // Scroll awareness
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 16);
     window.addEventListener("scroll", onScroll, { passive: true });
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Close mobile menu on route change
   useEffect(() => {
     setIsOpen(false);
-    setDashOpen(false);
+    setUserMenuOpen(false);
   }, [pathname]);
 
-  // Close dashboard dropdown on outside click
   useEffect(() => {
-    if (!dashOpen) return;
+    if (!userMenuOpen) return;
     const handler = (e: MouseEvent) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target as Node)) {
-        setDashOpen(false);
+      if (userMenuRef.current && !userMenuRef.current.contains(e.target as Node)) {
+        setUserMenuOpen(false);
       }
     };
     document.addEventListener("mousedown", handler);
     return () => document.removeEventListener("mousedown", handler);
-  }, [dashOpen]);
+  }, [userMenuOpen]);
+
+  const dashLink = getDashboardLink(user?.role);
+
+  const handleLogout = () => {
+    logout();
+    setUserMenuOpen(false);
+    navigate("/");
+  };
 
   return (
     <header
@@ -99,59 +99,79 @@ export default function Navbar() {
               </Link>
             ))}
 
-            {/* Dashboards dropdown */}
-            <div className="relative" ref={dropdownRef}>
-              <button
-                onClick={() => setDashOpen(!dashOpen)}
+            {isAuthenticated && (
+              <Link
+                to={dashLink.href}
                 className={clsx(
-                  "flex items-center gap-1 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
-                  dashboardLinks.some((l) => isActive(l.href))
+                  "flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                  isActive(dashLink.href)
                     ? "text-primary bg-primary/5"
                     : "text-gray-600 hover:text-navy hover:bg-gray-50"
                 )}
               >
-                Dashboards
-                <ChevronDown
-                  className={clsx(
-                    "w-3.5 h-3.5 transition-transform duration-200",
-                    dashOpen && "rotate-180"
-                  )}
-                />
-              </button>
-              {dashOpen && (
-                <div className="absolute top-full left-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50 animate-scale-in">
-                  {dashboardLinks.map((link) => (
-                    <Link
-                      key={link.href}
-                      to={link.href}
-                      onClick={() => setDashOpen(false)}
-                      className={clsx(
-                        "flex items-center px-4 py-2.5 text-sm transition-colors mx-1 rounded-xl",
-                        isActive(link.href)
-                          ? "text-primary bg-primary/5 font-medium"
-                          : "text-gray-600 hover:text-navy hover:bg-gray-50"
-                      )}
-                    >
-                      {link.label}
-                    </Link>
-                  ))}
-                </div>
-              )}
-            </div>
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                {dashLink.label}
+              </Link>
+            )}
           </nav>
 
           {/* Desktop CTA */}
           <div className="hidden md:flex items-center gap-2">
-            <Link
-              to="/login"
-              className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-navy transition-colors rounded-lg hover:bg-gray-50"
-            >
-              <LogIn className="w-4 h-4" />
-              Sign In
-            </Link>
-            <Link to="/register" className="btn-primary !py-2 !px-5 text-sm">
-              Sign Up Free
-            </Link>
+            {isAuthenticated ? (
+              <div className="relative" ref={userMenuRef}>
+                <button
+                  onClick={() => setUserMenuOpen(!userMenuOpen)}
+                  className="flex items-center gap-2 px-3 py-1.5 rounded-xl border border-gray-200 hover:border-gray-300 hover:bg-gray-50 transition-colors"
+                >
+                  <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center">
+                    <User className="w-3.5 h-3.5 text-primary" />
+                  </div>
+                  <span className="text-sm font-medium text-navy max-w-[120px] truncate">
+                    {user?.name?.split(" ")[0]}
+                  </span>
+                  <ChevronDown className={clsx("w-3.5 h-3.5 text-gray-400 transition-transform", userMenuOpen && "rotate-180")} />
+                </button>
+
+                {userMenuOpen && (
+                  <div className="absolute top-full right-0 mt-2 w-52 bg-white rounded-2xl shadow-xl border border-gray-100 py-2 z-50">
+                    <div className="px-4 py-2.5 border-b border-gray-100 mb-1">
+                      <p className="text-sm font-semibold text-navy truncate">{user?.name}</p>
+                      <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+                      <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-primary/10 text-primary capitalize">
+                        {user?.role?.toLowerCase()}
+                      </span>
+                    </div>
+                    <Link
+                      to={dashLink.href}
+                      className="flex items-center gap-2.5 px-4 py-2.5 text-sm text-gray-600 hover:text-navy hover:bg-gray-50 transition-colors mx-1 rounded-xl"
+                    >
+                      <LayoutDashboard className="w-4 h-4" />
+                      {dashLink.label}
+                    </Link>
+                    <button
+                      onClick={handleLogout}
+                      className="flex items-center gap-2.5 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50 transition-colors mx-1 rounded-xl mt-1"
+                    >
+                      <LogOut className="w-4 h-4" />
+                      Sign Out
+                    </button>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <>
+                <Link
+                  to="/login"
+                  className="flex items-center gap-2 px-4 py-2 text-sm font-medium text-gray-600 hover:text-navy transition-colors rounded-lg hover:bg-gray-50"
+                >
+                  <LogIn className="w-4 h-4" />
+                  Sign In
+                </Link>
+                <Link to="/register" className="btn-primary !py-2 !px-5 text-sm">
+                  Sign Up Free
+                </Link>
+              </>
+            )}
           </div>
 
           {/* Mobile Toggle */}
@@ -168,6 +188,18 @@ export default function Navbar() {
       {/* Mobile Menu */}
       {isOpen && (
         <div className="md:hidden border-t border-gray-100 bg-white px-4 pb-5 pt-3 space-y-1 animate-fade-in shadow-lg">
+          {isAuthenticated && (
+            <div className="flex items-center gap-3 px-4 py-3 mb-2 bg-gray-50 rounded-xl">
+              <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                <User className="w-4 h-4 text-primary" />
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-navy truncate">{user?.name}</p>
+                <p className="text-xs text-gray-400 truncate">{user?.email}</p>
+              </div>
+            </div>
+          )}
+
           {navLinks.map((link) => (
             <Link
               key={link.href}
@@ -175,50 +207,52 @@ export default function Navbar() {
               onClick={() => setIsOpen(false)}
               className={clsx(
                 "flex items-center px-4 py-3 rounded-xl text-sm font-medium transition-colors",
-                isActive(link.href)
-                  ? "text-primary bg-primary/5"
-                  : "text-gray-600 hover:bg-gray-50"
+                isActive(link.href) ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"
               )}
             >
               {link.label}
             </Link>
           ))}
-          <div className="pt-1 border-t border-gray-100 mt-2">
-            <p className="px-4 pt-2 pb-1 text-xs font-semibold text-gray-400 uppercase tracking-wider">
-              Dashboards
-            </p>
-            {dashboardLinks.map((link) => (
+
+          {isAuthenticated ? (
+            <>
               <Link
-                key={link.href}
-                to={link.href}
+                to={dashLink.href}
                 onClick={() => setIsOpen(false)}
                 className={clsx(
-                  "flex items-center px-4 py-2.5 rounded-xl text-sm transition-colors",
-                  isActive(link.href)
-                    ? "text-primary bg-primary/5 font-medium"
-                    : "text-gray-600 hover:bg-gray-50"
+                  "flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium transition-colors",
+                  isActive(dashLink.href) ? "text-primary bg-primary/5" : "text-gray-600 hover:bg-gray-50"
                 )}
               >
-                {link.label}
+                <LayoutDashboard className="w-4 h-4" />
+                {dashLink.label}
               </Link>
-            ))}
-          </div>
-          <div className="pt-2 flex flex-col gap-2 border-t border-gray-100 mt-2">
-            <Link
-              to="/register"
-              className="btn-primary w-full text-center !py-3"
-              onClick={() => setIsOpen(false)}
-            >
-              Sign Up Free
-            </Link>
-            <Link
-              to="/login"
-              className="btn-secondary w-full text-center !py-3"
-              onClick={() => setIsOpen(false)}
-            >
-              Sign In
-            </Link>
-          </div>
+              <button
+                onClick={handleLogout}
+                className="flex items-center gap-2 w-full px-4 py-3 rounded-xl text-sm font-medium text-red-500 hover:bg-red-50 transition-colors mt-1"
+              >
+                <LogOut className="w-4 h-4" />
+                Sign Out
+              </button>
+            </>
+          ) : (
+            <div className="pt-2 flex flex-col gap-2 border-t border-gray-100 mt-2">
+              <Link
+                to="/register"
+                className="btn-primary w-full text-center !py-3"
+                onClick={() => setIsOpen(false)}
+              >
+                Sign Up Free
+              </Link>
+              <Link
+                to="/login"
+                className="btn-secondary w-full text-center !py-3"
+                onClick={() => setIsOpen(false)}
+              >
+                Sign In
+              </Link>
+            </div>
+          )}
         </div>
       )}
     </header>
