@@ -159,7 +159,7 @@ export interface Property {
   images: string[];
   features: string[];
   available: boolean;
-  status: "PENDING" | "APPROVED" | "REJECTED";
+  status?: "PENDING" | "APPROVED" | "REJECTED";
   rating: number;
   reviews: number;
   propertyValue?: number;

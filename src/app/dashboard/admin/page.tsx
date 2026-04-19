@@ -2,15 +2,16 @@ import { useState, useEffect, useCallback } from "react";
 import {
   Users, Building2, DollarSign, CreditCard,
   CheckCircle2, XCircle, Search, RefreshCw,
-  Shield, Bell,
+  Shield, Bell, MapPin,
 } from "lucide-react";
-import { admin, loans as loansApi, AdminUser, AdminLoan, AdminStats } from "@/lib/api";
+import { admin, loans as loansApi, AdminUser, AdminLoan, AdminStats, AdminProperty } from "@/lib/api";
 import { useAuth } from "@/contexts/AuthContext";
 import { clsx } from "clsx";
 
-type Tab = "overview" | "tenants" | "loans";
+type Tab = "overview" | "tenants" | "loans" | "properties";
 type KycFilter = "ALL" | "PENDING" | "VERIFIED" | "REJECTED";
 type LoanStatusFilter = "ALL" | "PENDING" | "APPROVED" | "DISBURSED" | "REJECTED" | "REPAID";
+type PropStatusFilter = "ALL" | "PENDING" | "APPROVED" | "REJECTED";
 
 const KYC_LABELS: Record<string, string> = { PENDING: "Pending", VERIFIED: "Verified", REJECTED: "Rejected" };
 const LOAN_LABELS: Record<string, string> = { PENDING: "Pending", APPROVED: "Approved", DISBURSED: "Disbursed", REJECTED: "Rejected", REPAID: "Repaid" };
@@ -32,6 +33,11 @@ export default function AdminDashboard() {
   const [loansList, setLoansList] = useState<AdminLoan[]>([]);
   const [loansLoading, setLoansLoading] = useState(false);
   const [loanFilter, setLoanFilter] = useState<LoanStatusFilter>("PENDING");
+
+  // Properties
+  const [propList, setPropList] = useState<AdminProperty[]>([]);
+  const [propsLoading, setPropsLoading] = useState(false);
+  const [propFilter, setPropFilter] = useState<PropStatusFilter>("PENDING");
 
   const [actionLoading, setActionLoading] = useState<string | null>(null);
 
@@ -65,7 +71,16 @@ export default function AdminDashboard() {
       .finally(() => setLoansLoading(false));
   }, [loanFilter]);
 
-  // Overview: always load pending tenants + pending loans
+  const loadProperties = useCallback(() => {
+    setPropsLoading(true);
+    admin
+      .getProperties({ status: propFilter !== "ALL" ? propFilter : undefined })
+      .then((p) => setPropList(p))
+      .catch(() => {})
+      .finally(() => setPropsLoading(false));
+  }, [propFilter]);
+
+  // Overview: load pending tenants + loans + properties
   useEffect(() => {
     if (tab === "overview") {
       setTenantsLoading(true);
@@ -79,6 +94,12 @@ export default function AdminDashboard() {
         .then(setLoansList)
         .catch(() => {})
         .finally(() => setLoansLoading(false));
+
+      setPropsLoading(true);
+      admin.getProperties({ status: "PENDING" })
+        .then(setPropList)
+        .catch(() => {})
+        .finally(() => setPropsLoading(false));
     }
   }, [tab]);
 
@@ -89,6 +110,10 @@ export default function AdminDashboard() {
   useEffect(() => {
     if (tab === "loans") loadLoans();
   }, [tab, loadLoans]);
+
+  useEffect(() => {
+    if (tab === "properties") loadProperties();
+  }, [tab, loadProperties]);
 
   const handleKyc = async (userId: string, status: "VERIFIED" | "REJECTED") => {
     setActionLoading(userId + status);
@@ -110,8 +135,19 @@ export default function AdminDashboard() {
     setActionLoading(null);
   };
 
+  const handleProperty = async (propId: string, status: "APPROVED" | "REJECTED") => {
+    setActionLoading(propId + status);
+    try {
+      await admin.updatePropertyStatus(propId, { status });
+      setPropList((prev) => prev.map((p) => p.id === propId ? { ...p, status } : p));
+      refreshStats();
+    } catch {}
+    setActionLoading(null);
+  };
+
   const pendingTenants = tenants.filter((t) => t.kycStatus === "PENDING");
   const pendingLoans = loansList.filter((l) => l.status === "PENDING");
+  const pendingProps = propList.filter((p) => p.status === "PENDING");
 
   const filteredTenants = tenants.filter((t) => {
     if (kycFilter !== "ALL" && t.kycStatus !== kycFilter) return false;
@@ -194,8 +230,8 @@ export default function AdminDashboard() {
         </div>
 
         {/* Tabs */}
-        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
-          {(["overview", "tenants", "loans"] as Tab[]).map((t) => (
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit flex-wrap">
+          {(["overview", "tenants", "loans", "properties"] as Tab[]).map((t) => (
             <button
               key={t}
               onClick={() => setTab(t)}
@@ -222,6 +258,15 @@ export default function AdminDashboard() {
                     </span>
                   )}
                 </span>
+              ) : t === "properties" ? (
+                <span className="flex items-center gap-1.5">
+                  Properties
+                  {pendingProps.length > 0 && (
+                    <span className="w-5 h-5 bg-blue-500 text-white rounded-full text-xs flex items-center justify-center">
+                      {pendingProps.length}
+                    </span>
+                  )}
+                </span>
               ) : (
                 "Overview"
               )}
@@ -231,7 +276,7 @@ export default function AdminDashboard() {
 
         {/* ── Overview ─────────────────────────────────────────────────── */}
         {tab === "overview" && (
-          <div className="grid lg:grid-cols-2 gap-6">
+          <div className="grid lg:grid-cols-2 xl:grid-cols-3 gap-6">
             {/* Pending tenant approvals */}
             <div className="card">
               <div className="flex items-center justify-between mb-4">
@@ -348,6 +393,63 @@ export default function AdminDashboard() {
                   {pendingLoans.length > 6 && (
                     <button onClick={() => setTab("loans")} className="w-full text-center text-xs text-primary py-2 hover:underline">
                       View all {pendingLoans.length} pending loans →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+            {/* Pending property approvals */}
+            <div className="card">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-navy text-lg">Pending Properties</h2>
+                {pendingProps.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-blue-50 text-blue-700 text-xs font-semibold">
+                    {pendingProps.length} pending
+                  </span>
+                )}
+              </div>
+
+              {propsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              ) : pendingProps.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-400" />
+                  <p className="text-sm">No properties awaiting review</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingProps.slice(0, 5).map((p) => (
+                    <div key={p.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="w-9 h-9 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                        <MapPin className="w-4 h-4" />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-navy truncate">{p.title}</p>
+                        <p className="text-xs text-gray-400 truncate">{p.owner?.name} · {p.neighborhood}</p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleProperty(p.id, "APPROVED")}
+                          disabled={!!actionLoading}
+                          className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleProperty(p.id, "REJECTED")}
+                          disabled={!!actionLoading}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingProps.length > 5 && (
+                    <button onClick={() => setTab("properties")} className="w-full text-center text-xs text-primary py-2 hover:underline">
+                      View all {pendingProps.length} pending properties →
                     </button>
                   )}
                 </div>
@@ -603,6 +705,95 @@ export default function AdminDashboard() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+            )}
+          </div>
+        )}
+        {/* ── Properties ──────────────────────────────────────────────── */}
+        {tab === "properties" && (
+          <div className="card">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+              <h2 className="font-bold text-navy text-lg flex-1">Property Listings</h2>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["ALL", "PENDING", "APPROVED", "REJECTED"] as PropStatusFilter[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setPropFilter(f)}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      propFilter === f ? "bg-navy text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {f === "ALL" ? "All" : f.charAt(0) + f.slice(1).toLowerCase()}
+                    {f === "PENDING" && pendingProps.length > 0 && ` (${pendingProps.length})`}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={loadProperties}
+                className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors shrink-0"
+                title="Refresh"
+              >
+                <RefreshCw className={clsx("w-4 h-4 text-gray-400", propsLoading && "animate-spin")} />
+              </button>
+            </div>
+
+            {propsLoading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : propList.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Building2 className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No properties found</p>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                {propList.map((p) => (
+                  <div key={p.id} className="flex items-start gap-4 p-4 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                    <div className="w-10 h-10 bg-blue-50 text-blue-500 rounded-xl flex items-center justify-center shrink-0">
+                      <MapPin className="w-5 h-5" />
+                    </div>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-sm font-semibold text-navy">{p.title}</p>
+                      <p className="text-xs text-gray-400 mt-0.5">{p.location} · {p.neighborhood}</p>
+                      <div className="flex items-center gap-3 mt-1 flex-wrap">
+                        <span className="text-xs text-gray-500">
+                          {p.bedrooms}BR · {p.bathrooms}BA · KES {p.price.toLocaleString()}/mo
+                        </span>
+                        <span className="text-xs text-gray-400">by {p.owner?.name}</span>
+                      </div>
+                    </div>
+                    <div className="flex flex-col items-end gap-2 shrink-0">
+                      <span className={clsx(
+                        "px-2.5 py-1 rounded-full text-xs font-semibold",
+                        p.status === "APPROVED" ? "bg-green-50 text-green-700" :
+                        p.status === "REJECTED" ? "bg-red-50 text-red-600" :
+                        "bg-amber-50 text-amber-700"
+                      )}>
+                        {p.status.charAt(0) + p.status.slice(1).toLowerCase()}
+                      </span>
+                      {p.status === "PENDING" && (
+                        <div className="flex gap-1.5">
+                          <button
+                            onClick={() => handleProperty(p.id, "APPROVED")}
+                            disabled={!!actionLoading}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                          >
+                            <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                          </button>
+                          <button
+                            onClick={() => handleProperty(p.id, "REJECTED")}
+                            disabled={!!actionLoading}
+                            className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                          >
+                            <XCircle className="w-3.5 h-3.5" /> Reject
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

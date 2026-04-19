@@ -1,42 +1,104 @@
+import { useState, useEffect, useCallback } from "react";
+import {
+  Bell, Building2, Users, TrendingUp, DollarSign, Plus, ChevronRight,
+  Eye, X, Clock, CheckCircle2, XCircle, AlertCircle, RefreshCw,
+} from "lucide-react";
 import { Link } from "react-router-dom";
-import { Bell, Building2, Users, TrendingUp, DollarSign, Plus, ChevronRight, CheckCircle2, Clock, AlertCircle, MapPin, Eye } from "lucide-react";
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts";
+import { clsx } from "clsx";
+import { properties as propertiesApi, Property, users as usersApi } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
 
-const revenueData = [
-  { month: "Oct", revenue: 340000 }, { month: "Nov", revenue: 340000 }, { month: "Dec", revenue: 340000 },
-  { month: "Jan", revenue: 425000 }, { month: "Feb", revenue: 425000 }, { month: "Mar", revenue: 425000 },
-];
-const myProperties = [
-  { id: "1", title: "Modern 3BR – Kilimani", rent: 85000, tenant: "James Kamau", status: "occupied", paymentStatus: "paid", image: "https://images.unsplash.com/photo-1545324418-cc1a3fa10c00?w=200&q=60" },
-  { id: "2", title: "Cozy 2BR – Westlands", rent: 65000, tenant: "Amara Ochieng", status: "occupied", paymentStatus: "pending", image: "https://images.unsplash.com/photo-1502672260266-1c1ef2d93688?w=200&q=60" },
-  { id: "3", title: "Studio – Lavington", rent: 28000, tenant: "Vacant", status: "vacant", paymentStatus: "n/a", image: "https://images.unsplash.com/photo-1522708323590-d24dbb6b0267?w=200&q=60" },
-  { id: "4", title: "3BR Townhouse – Parklands", rent: 75000, tenant: "Fatima Ali", status: "occupied", paymentStatus: "paid", image: "https://images.unsplash.com/photo-1568605114967-8130f3a36994?w=200&q=60" },
-];
-const recentActivity = [
-  { id: 1, icon: CheckCircle2, color: "text-green-500 bg-green-50", title: "Rent received", desc: "James Kamau paid KES 85,000 via M-Pesa", time: "Today, 9:14 AM" },
-  { id: 2, icon: Clock, color: "text-yellow-500 bg-yellow-50", title: "Payment overdue", desc: "Amara Ochieng – KES 65,000 overdue by 3 days", time: "3 days ago" },
-  { id: 3, icon: AlertCircle, color: "text-blue-500 bg-blue-50", title: "Lease renewal", desc: "Fatima Ali's lease expires in 30 days", time: "Yesterday" },
-  { id: 4, icon: Users, color: "text-purple-500 bg-purple-50", title: "New inquiry", desc: "New tenant interested in Studio – Lavington", time: "2 days ago" },
-];
+const STATUS_LABELS: Record<string, string> = { PENDING: "Pending Approval", APPROVED: "Live", REJECTED: "Rejected" };
+
+const emptyForm = {
+  title: "", description: "", location: "", neighborhood: "",
+  price: "", type: "RENT" as "RENT" | "RENT_TO_OWN",
+  bedrooms: "1", bathrooms: "1", size: "",
+  propertyValue: "", equityRate: "",
+};
 
 export default function LandlordDashboard() {
-  const occupancyRate = Math.round((myProperties.filter((p) => p.status === "occupied").length / myProperties.length) * 100);
+  const { user } = useAuth();
+  const [myProperties, setMyProperties] = useState<Property[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [showModal, setShowModal] = useState(false);
+  const [form, setForm] = useState(emptyForm);
+  const [submitting, setSubmitting] = useState(false);
+  const [formError, setFormError] = useState("");
+  const [dashboard, setDashboard] = useState<Record<string, unknown> | null>(null);
+
+  const loadProperties = useCallback(() => {
+    setLoading(true);
+    propertiesApi.mine()
+      .then(setMyProperties)
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => {
+    loadProperties();
+    usersApi.getLandlordDashboard().then((d) => setDashboard(d as Record<string, unknown>)).catch(() => {});
+  }, [loadProperties]);
+
+  const update = (field: string, value: string) =>
+    setForm((prev) => ({ ...prev, [field]: value }));
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFormError("");
+    setSubmitting(true);
+    try {
+      await propertiesApi.create({
+        title: form.title,
+        description: form.description || undefined,
+        location: form.location,
+        neighborhood: form.neighborhood,
+        price: Number(form.price),
+        type: form.type as "rent" | "rent-to-own",
+        bedrooms: Number(form.bedrooms),
+        bathrooms: Number(form.bathrooms),
+        size: Number(form.size),
+        images: [],
+        features: [],
+        available: true,
+        ...(form.type === "RENT_TO_OWN" && form.propertyValue ? { propertyValue: Number(form.propertyValue) } : {}),
+        ...(form.type === "RENT_TO_OWN" && form.equityRate ? { equityRate: Number(form.equityRate) } : {}),
+      });
+      setShowModal(false);
+      setForm(emptyForm);
+      loadProperties();
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : "Failed to submit property.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const approvedProps = myProperties.filter((p) => p.status === "APPROVED");
+  const pendingProps = myProperties.filter((p) => p.status === "PENDING");
+  const activeLeases = (dashboard as { activeLeases?: number } | null)?.activeLeases ?? 0;
+  const monthlyRevenue = (dashboard as { monthlyRevenue?: number } | null)?.monthlyRevenue ?? 0;
+
+  const inputCls = "w-full border border-gray-200 rounded-xl px-3.5 py-2.5 text-sm outline-none focus:border-primary/50 transition-colors";
 
   return (
     <div className="min-h-screen bg-gray-50 page-content">
+      {/* Header */}
       <div className="bg-white border-b border-gray-100">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
           <div className="flex items-center justify-between gap-3">
             <div className="min-w-0">
               <p className="text-xs sm:text-sm text-gray-500">Landlord Dashboard</p>
-              <h1 className="text-xl sm:text-2xl font-bold text-navy truncate">Grace Wanjiku 🏡</h1>
+              <h1 className="text-xl sm:text-2xl font-bold text-navy truncate">{user?.name}</h1>
             </div>
             <div className="flex items-center gap-2 sm:gap-3 shrink-0">
               <button className="relative p-2 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors">
                 <Bell className="w-5 h-5 text-gray-600" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
               </button>
-              <button className="btn-primary !py-2 !px-3 sm:!px-4 flex items-center gap-1.5 text-sm">
+              <button
+                onClick={() => setShowModal(true)}
+                className="btn-primary !py-2 !px-3 sm:!px-4 flex items-center gap-1.5 text-sm"
+              >
                 <Plus className="w-4 h-4 shrink-0" />
                 <span className="hidden sm:inline">Add Property</span>
               </button>
@@ -46,102 +108,217 @@ export default function LandlordDashboard() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {/* Stats */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
           {[
-            { label: "Total Properties", value: "4", icon: Building2, color: "text-primary bg-primary/10", sub: "+1 this year" },
-            { label: "Active Tenants", value: "3", icon: Users, color: "text-blue-600 bg-blue-50", sub: "1 unit vacant" },
-            { label: "Monthly Revenue", value: "KES 425K", icon: DollarSign, color: "text-green-600 bg-green-50", sub: "+25% vs last year" },
-            { label: "Occupancy Rate", value: `${occupancyRate}%`, icon: TrendingUp, color: "text-purple-600 bg-purple-50", sub: "Industry avg: 78%" },
+            { label: "Total Listed", value: myProperties.length.toString(), icon: Building2, color: "text-primary bg-primary/10", sub: `${approvedProps.length} live` },
+            { label: "Active Tenants", value: activeLeases.toString(), icon: Users, color: "text-blue-600 bg-blue-50", sub: "Active leases" },
+            { label: "Monthly Revenue", value: monthlyRevenue > 0 ? `KES ${(monthlyRevenue / 1000).toFixed(0)}K` : "—", icon: DollarSign, color: "text-green-600 bg-green-50", sub: "Collected rent" },
+            { label: "Pending Review", value: pendingProps.length.toString(), icon: TrendingUp, color: "text-amber-600 bg-amber-50", sub: "Awaiting admin approval" },
           ].map((stat) => (
             <div key={stat.label} className="card">
-              <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center mb-3`}><stat.icon className="w-5 h-5" /></div>
+              <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center mb-3`}>
+                <stat.icon className="w-5 h-5" />
+              </div>
               <div className="text-2xl font-bold text-navy">{stat.value}</div>
               <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
-              <div className="text-xs text-green-600 font-medium mt-1">{stat.sub}</div>
+              <div className="text-xs text-gray-500 font-medium mt-1">{stat.sub}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <div><h2 className="font-bold text-navy text-lg">Revenue Overview</h2><p className="text-xs text-gray-400 mt-0.5">Monthly rental income collected</p></div>
-                <div className="text-right"><p className="text-2xl font-bold text-navy">KES 425K</p><p className="text-xs text-green-600">This month</p></div>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <BarChart data={revenueData} barSize={32}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v / 1000}K`} />
-                  <Tooltip formatter={(v) => [`KES ${Number(v).toLocaleString()}`, "Revenue"]} />
-                  <Bar dataKey="revenue" fill="#1a2332" radius={[6, 6, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            </div>
-
-            <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-navy text-lg">My Properties</h2>
-                <Link to="/properties" className="text-xs text-primary flex items-center gap-1 hover:underline">Manage All <ChevronRight className="w-3 h-3" /></Link>
-              </div>
-              <div className="space-y-4">
-                {myProperties.map((p) => (
-                  <div key={p.id} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-colors">
-                    <div className="w-16 h-12 rounded-lg overflow-hidden shrink-0">
-                      <img src={p.image} alt={p.title} className="w-full h-full object-cover" />
-                    </div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-semibold text-navy truncate">{p.title}</p>
-                      <div className="flex items-center gap-1.5 text-xs text-gray-400 mt-0.5"><Users className="w-3 h-3" />{p.tenant}</div>
-                    </div>
-                    <div className="text-right shrink-0">
-                      <p className="text-sm font-bold text-navy">KES {p.rent.toLocaleString()}</p>
-                      <span className={p.paymentStatus === "paid" ? "badge-green" : p.paymentStatus === "pending" ? "badge-yellow" : "badge-blue"}>
-                        {p.paymentStatus === "n/a" ? "Vacant" : p.paymentStatus}
-                      </span>
-                    </div>
-                    <Link to={`/properties/${p.id}`} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-navy transition-colors"><Eye className="w-4 h-4" /></Link>
-                  </div>
-                ))}
-              </div>
+        {/* Properties list */}
+        <div className="card">
+          <div className="flex items-center justify-between mb-5">
+            <h2 className="font-bold text-navy text-lg">My Properties</h2>
+            <div className="flex items-center gap-2">
+              <button onClick={loadProperties} className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors">
+                <RefreshCw className={clsx("w-4 h-4 text-gray-400", loading && "animate-spin")} />
+              </button>
+              <Link to="/properties" className="text-xs text-primary flex items-center gap-1 hover:underline">
+                Browse All <ChevronRight className="w-3 h-3" />
+              </Link>
             </div>
           </div>
 
-          <div className="space-y-6">
-            <div className="card bg-navy text-white">
-              <h2 className="font-bold text-lg mb-4">This Month</h2>
-              <div className="space-y-3">
-                {[["Expected Revenue", "KES 425,000", "text-white"], ["Collected", "KES 360,000", "text-green-400"], ["Outstanding", "KES 65,000", "text-yellow-400"]].map(([l, v, cls]) => (
-                  <div key={l} className="flex justify-between"><span className="text-gray-400 text-sm">{l}</span><span className={`font-semibold ${cls}`}>{v}</span></div>
-                ))}
-                <div className="h-px bg-white/10 my-1" />
-                <div className="flex justify-between"><span className="text-gray-400 text-sm">Collection Rate</span><span className="font-bold text-primary">84.7%</span></div>
-              </div>
-              <div className="mt-4"><div className="w-full bg-white/10 rounded-full h-2"><div className="bg-primary h-2 rounded-full" style={{ width: "84.7%" }} /></div></div>
+          {loading ? (
+            <div className="flex justify-center py-12">
+              <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
             </div>
-
-            <div className="card">
-              <h2 className="font-bold text-navy text-lg mb-4">Recent Activity</h2>
-              <div className="space-y-3">
-                {recentActivity.map((item) => (
-                  <div key={item.id} className="flex items-start gap-3">
-                    <div className={`w-8 h-8 rounded-lg ${item.color} flex items-center justify-center shrink-0`}><item.icon className="w-4 h-4" /></div>
-                    <div><p className="text-sm font-medium text-navy leading-snug">{item.title}</p><p className="text-xs text-gray-400 mt-0.5 leading-snug">{item.desc}</p><p className="text-xs text-gray-300 mt-1">{item.time}</p></div>
+          ) : myProperties.length === 0 ? (
+            <div className="text-center py-12">
+              <Building2 className="w-12 h-12 mx-auto mb-3 text-gray-200" />
+              <p className="text-gray-500 font-medium">No properties yet</p>
+              <p className="text-gray-400 text-sm mt-1 mb-4">Add your first property to get started</p>
+              <button onClick={() => setShowModal(true)} className="btn-primary !py-2 !px-5 text-sm inline-flex items-center gap-2">
+                <Plus className="w-4 h-4" /> Add Property
+              </button>
+            </div>
+          ) : (
+            <div className="space-y-3">
+              {myProperties.map((p) => (
+                <div key={p.id} className="flex items-center gap-4 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                  <div className="w-16 h-12 rounded-lg bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+                    {p.images?.[0] ? (
+                      <img src={p.images[0]} alt={p.title} className="w-full h-full object-cover" />
+                    ) : (
+                      <Building2 className="w-6 h-6 text-gray-300" />
+                    )}
                   </div>
-                ))}
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-semibold text-navy truncate">{p.title}</p>
+                    <p className="text-xs text-gray-400 truncate">{p.location}</p>
+                  </div>
+                  <div className="text-right shrink-0">
+                    <p className="text-sm font-bold text-navy">KES {p.price.toLocaleString()}/mo</p>
+                    <span className={clsx(
+                      "inline-block mt-1 px-2.5 py-0.5 rounded-full text-xs font-semibold",
+                      p.status === "APPROVED" ? "bg-green-50 text-green-700" :
+                      p.status === "REJECTED" ? "bg-red-50 text-red-600" :
+                      "bg-amber-50 text-amber-700"
+                    )}>
+                      {p.status === "APPROVED" ? <CheckCircle2 className="w-3 h-3 inline mr-0.5" /> :
+                       p.status === "REJECTED" ? <XCircle className="w-3 h-3 inline mr-0.5" /> :
+                       <Clock className="w-3 h-3 inline mr-0.5" />}
+                      {p.status ? (STATUS_LABELS[p.status] ?? p.status) : "Unknown"}
+                    </span>
+                  </div>
+                  {p.status === "APPROVED" && (
+                    <Link to={`/properties/${p.id}`} className="p-2 rounded-lg hover:bg-gray-100 text-gray-400 hover:text-navy transition-colors">
+                      <Eye className="w-4 h-4" />
+                    </Link>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* Pending review note */}
+        {pendingProps.length > 0 && (
+          <div className="mt-4 flex items-start gap-3 p-4 rounded-xl bg-amber-50 border border-amber-100">
+            <AlertCircle className="w-5 h-5 text-amber-600 shrink-0 mt-0.5" />
+            <p className="text-sm text-amber-800">
+              You have <strong>{pendingProps.length}</strong> {pendingProps.length === 1 ? "property" : "properties"} awaiting admin review.
+              Once approved, {pendingProps.length === 1 ? "it" : "they"} will appear on the Rentmo website.
+            </p>
+          </div>
+        )}
+      </div>
+
+      {/* ── Add Property Modal ─────────────────────────────────────────────── */}
+      {showModal && (
+        <div className="fixed inset-0 bg-black/50 z-50 flex items-end sm:items-center justify-center p-4 sm:p-6">
+          <div className="bg-white rounded-3xl w-full max-w-lg max-h-[90vh] overflow-y-auto shadow-2xl">
+            <div className="flex items-center justify-between px-6 pt-6 pb-4 border-b border-gray-100">
+              <div>
+                <h2 className="text-lg font-bold text-navy">Add Property</h2>
+                <p className="text-xs text-gray-400 mt-0.5">Submitted for admin review before going live</p>
               </div>
+              <button onClick={() => { setShowModal(false); setFormError(""); setForm(emptyForm); }}
+                className="w-8 h-8 flex items-center justify-center rounded-xl hover:bg-gray-100 text-gray-400 transition-colors">
+                <X className="w-5 h-5" />
+              </button>
             </div>
 
-            <div className="card border-2 border-dashed border-primary/30 bg-primary/5 text-center p-6">
-              <div className="w-12 h-12 bg-primary/10 text-primary rounded-xl flex items-center justify-center mx-auto mb-3"><MapPin className="w-6 h-6" /></div>
-              <p className="font-semibold text-navy text-sm">1 Unit Vacant</p>
-              <p className="text-xs text-gray-500 mt-1 mb-4">Studio in Lavington is ready to rent</p>
-              <Link to="/properties/4" className="btn-primary !py-2 !text-sm w-full text-center block">Find Tenant</Link>
-            </div>
+            <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+              {formError && (
+                <div className="flex items-center gap-2 bg-red-50 border border-red-100 text-red-600 rounded-xl px-4 py-3 text-sm">
+                  <AlertCircle className="w-4 h-4 shrink-0" /> {formError}
+                </div>
+              )}
+
+              <div className="grid grid-cols-2 gap-4">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Property Title *</label>
+                  <input value={form.title} onChange={(e) => update("title", e.target.value)}
+                    placeholder="e.g. Modern 3BR – Kilimani" required className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Location *</label>
+                  <input value={form.location} onChange={(e) => update("location", e.target.value)}
+                    placeholder="e.g. Nairobi, Kenya" required className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Neighborhood *</label>
+                  <input value={form.neighborhood} onChange={(e) => update("neighborhood", e.target.value)}
+                    placeholder="e.g. Kilimani" required className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Monthly Price (KES) *</label>
+                  <input type="number" value={form.price} onChange={(e) => update("price", e.target.value)}
+                    placeholder="85000" required min={1} className={inputCls} />
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Type *</label>
+                  <select value={form.type} onChange={(e) => update("type", e.target.value)} className={inputCls}>
+                    <option value="RENT">Rent</option>
+                    <option value="RENT_TO_OWN">Rent-to-Own</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Bedrooms *</label>
+                  <select value={form.bedrooms} onChange={(e) => update("bedrooms", e.target.value)} className={inputCls}>
+                    {[1, 2, 3, 4, 5, 6].map((n) => <option key={n} value={n}>{n} BR</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Bathrooms *</label>
+                  <select value={form.bathrooms} onChange={(e) => update("bathrooms", e.target.value)} className={inputCls}>
+                    {[1, 2, 3, 4].map((n) => <option key={n} value={n}>{n}</option>)}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Size (sqm) *</label>
+                  <input type="number" value={form.size} onChange={(e) => update("size", e.target.value)}
+                    placeholder="80" required min={1} className={inputCls} />
+                </div>
+
+                {form.type === "RENT_TO_OWN" && (
+                  <>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Property Value (KES)</label>
+                      <input type="number" value={form.propertyValue} onChange={(e) => update("propertyValue", e.target.value)}
+                        placeholder="5000000" className={inputCls} />
+                    </div>
+                    <div>
+                      <label className="block text-xs font-medium text-gray-700 mb-1.5">Equity Rate (%)</label>
+                      <input type="number" value={form.equityRate} onChange={(e) => update("equityRate", e.target.value)}
+                        placeholder="2.5" step="0.1" className={inputCls} />
+                    </div>
+                  </>
+                )}
+
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-gray-700 mb-1.5">Description</label>
+                  <textarea value={form.description} onChange={(e) => update("description", e.target.value)}
+                    placeholder="Describe the property..." rows={3}
+                    className={`${inputCls} resize-none`} />
+                </div>
+              </div>
+
+              <div className="flex gap-3 pt-2">
+                <button type="button" onClick={() => { setShowModal(false); setFormError(""); setForm(emptyForm); }}
+                  className="flex-1 py-3 rounded-xl border border-gray-200 text-sm font-medium text-gray-600 hover:bg-gray-50 transition-colors">
+                  Cancel
+                </button>
+                <button type="submit" disabled={submitting}
+                  className="flex-1 py-3 rounded-xl bg-primary text-white text-sm font-semibold hover:bg-primary-dark transition-colors disabled:opacity-60 flex items-center justify-center gap-2">
+                  {submitting ? <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> : null}
+                  Submit for Review
+                </button>
+              </div>
+            </form>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
