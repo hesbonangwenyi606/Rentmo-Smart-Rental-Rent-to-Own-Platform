@@ -1,21 +1,31 @@
 import { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
-import { Home, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome } from "lucide-react";
+import { Home, Mail, Lock, Eye, EyeOff, ArrowRight, Chrome, AlertCircle } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    setTimeout(() => {
+    setError("");
+    try {
+      const user = await login(email, password);
+      if (user.role === "ADMIN") navigate("/dashboard/admin");
+      else if (user.role === "LANDLORD") navigate("/dashboard/landlord");
+      else navigate("/dashboard");
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Invalid email or password");
+    } finally {
       setLoading(false);
-      navigate("/dashboard");
-    }, 1200);
+    }
   };
 
   return (
@@ -106,6 +116,13 @@ export default function LoginPage() {
             <span className="text-sm text-gray-400">or sign in with email</span>
             <div className="flex-1 h-px bg-gray-200" />
           </div>
+
+          {error && (
+            <div className="flex items-center gap-2.5 bg-red-50 border border-red-200 text-red-700 rounded-xl px-4 py-3 text-sm mb-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              {error}
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             <div>
