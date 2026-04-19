@@ -15,7 +15,8 @@
       "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"james@rentmo.online\",\"password\":\"rentmo2026\"}')",
       "Bash(python -c ':*)",
       "Bash(xargs wc *)",
-      "Bash(npx vite *)"
+      "Bash(npx vite *)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\" http://localhost:3001/api/health)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Admin\\.claude\\projects\\c--Users-Admin-clients-Rentmo-Smart-Rental-Rent-to-Own-Platform"
