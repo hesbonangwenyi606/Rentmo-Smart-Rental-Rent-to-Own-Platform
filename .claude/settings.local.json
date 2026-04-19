@@ -14,7 +14,8 @@
       "Bash(npx ts-node:*)",
       "Bash(curl -s -X POST http://localhost:3001/api/auth/login -H 'Content-Type: application/json' -d '{\"email\":\"james@rentmo.online\",\"password\":\"rentmo2026\"}')",
       "Bash(python -c ':*)",
-      "Bash(xargs wc *)"
+      "Bash(xargs wc *)",
+      "Bash(npx vite *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\Admin\\.claude\\projects\\c--Users-Admin-clients-Rentmo-Smart-Rental-Rent-to-Own-Platform"
