@@ -159,6 +159,7 @@ export interface Property {
   images: string[];
   features: string[];
   available: boolean;
+  status: "PENDING" | "APPROVED" | "REJECTED";
   rating: number;
   reviews: number;
   propertyValue?: number;
@@ -411,6 +412,23 @@ export interface AdminUser {
   _count: { leases: number; payments: number };
 }
 
+export interface AdminProperty {
+  id: string;
+  title: string;
+  location: string;
+  neighborhood: string;
+  price: number;
+  type: string;
+  bedrooms: number;
+  bathrooms: number;
+  size: number;
+  images: string;
+  status: "PENDING" | "APPROVED" | "REJECTED";
+  available: boolean;
+  createdAt: string;
+  owner: { id: string; name: string; email: string };
+}
+
 export interface AdminLoan {
   id: string;
   amount: number;
@@ -453,4 +471,14 @@ export const admin = {
     return request<AdminLoan[]>(`/admin/loans${qs ? `?${qs}` : ""}`);
   },
   getClaims: () => request<InsuranceClaim[]>("/admin/claims"),
+  getProperties: (params?: { page?: number; status?: string }) => {
+    const qs = new URLSearchParams(
+      Object.fromEntries(
+        Object.entries(params || {}).filter(([, v]) => v !== undefined && v !== "").map(([k, v]) => [k, String(v)])
+      )
+    ).toString();
+    return request<AdminProperty[]>(`/admin/properties${qs ? `?${qs}` : ""}`);
+  },
+  updatePropertyStatus: (id: string, data: { status: "APPROVED" | "REJECTED"; reason?: string }) =>
+    request<AdminProperty>(`/admin/properties/${id}/status`, { method: "PATCH", body: JSON.stringify(data) }),
 };

@@ -63,6 +63,8 @@ model Property {
   // JSON array of feature strings
   features     String   @default("[]")
   available    Boolean  @default(true)
+  // PENDING | APPROVED | REJECTED
+  status       String   @default("PENDING")
   rating       Float    @default(0)
   reviews      Int      @default(0)
   propertyValue Int?

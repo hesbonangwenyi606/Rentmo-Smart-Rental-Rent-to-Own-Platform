@@ -193,6 +193,71 @@ export async function getAllLoans(req: Request, res: Response) {
   R.paginated(res, loans, total, p, l);
 }
 
+export async function getProperties(req: Request, res: Response) {
+  const { page = "1", limit = "20", status = "" } = req.query as Record<string, string>;
+  const p = parseInt(page, 10) || 1;
+  const l = Math.min(parseInt(limit, 10) || 20, 100);
+  const skip = (p - 1) * l;
+
+  const where: Record<string, unknown> = {};
+  if (status) where.status = status;
+
+  const [total, props] = await Promise.all([
+    prisma.property.count({ where }),
+    prisma.property.findMany({
+      where,
+      skip,
+      take: l,
+      orderBy: { createdAt: "desc" },
+      include: { owner: { select: { id: true, name: true, email: true } } },
+    }),
+  ]);
+
+  R.paginated(res, props, total, p, l);
+}
+
+export async function updatePropertyStatus(req: Request, res: Response) {
+  const { status, reason } = req.body as { status: string; reason?: string };
+  if (!["APPROVED", "REJECTED"].includes(status)) {
+    R.error(res, "Invalid status", 422);
+    return;
+  }
+
+  const property = await prisma.property.findUnique({ where: { id: req.params.id } });
+  if (!property) {
+    R.notFound(res, "Property");
+    return;
+  }
+
+  const updated = await prisma.property.update({
+    where: { id: req.params.id },
+    data: { status },
+    include: { owner: { select: { id: true, name: true, email: true } } },
+  });
+
+  if (status === "APPROVED") {
+    await prisma.notification.create({
+      data: {
+        userId: property.ownerId,
+        title: "Property Approved ✓",
+        message: `Your property "${property.title}" has been approved and is now live on Rentmo.`,
+        type: "success",
+      },
+    });
+  } else if (status === "REJECTED") {
+    await prisma.notification.create({
+      data: {
+        userId: property.ownerId,
+        title: "Property Listing Rejected",
+        message: `Your property "${property.title}" was not approved.${reason ? ` Reason: ${reason}` : " Please contact support for details."}`,
+        type: "error",
+      },
+    });
+  }
+
+  R.success(res, updated);
+}
+
 export async function getAllClaims(req: Request, res: Response) {
   const { page = "1", limit = "20", status = "" } = req.query as Record<string, string>;
   const p = parseInt(page, 10) || 1;

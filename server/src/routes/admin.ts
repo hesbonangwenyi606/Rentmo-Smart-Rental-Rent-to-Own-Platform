@@ -12,5 +12,7 @@ router.patch("/users/:id", ctrl.updateUser);
 router.get("/payments", ctrl.getAllPayments);
 router.get("/loans", ctrl.getAllLoans);
 router.get("/claims", ctrl.getAllClaims);
+router.get("/properties", ctrl.getProperties);
+router.patch("/properties/:id/status", ctrl.updatePropertyStatus);
 
 export default router;

@@ -59,7 +59,7 @@ export async function list(req: Request, res: Response) {
   const l = Math.min(parseInt(limit, 10) || 20, 100);
   const skip = (p - 1) * l;
 
-  const where: Record<string, unknown> = {};
+  const where: Record<string, unknown> = { status: "APPROVED" };
 
   if (search) {
     where.OR = [
@@ -209,7 +209,7 @@ export async function remove(req: Request, res: Response) {
 
 export async function myProperties(req: Request, res: Response) {
   const properties = await prisma.property.findMany({
-    where: { ownerId: req.user!.userId },
+    where: { ownerId: req.user!.userId }, // all statuses — landlord sees their own
     orderBy: { createdAt: "desc" },
     include: {
       leases: {
