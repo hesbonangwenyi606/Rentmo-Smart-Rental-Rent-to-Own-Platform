@@ -1,220 +1,612 @@
-import { Link } from "react-router-dom";
-import { Users, Building2, DollarSign, TrendingUp, Bell, Shield, AlertCircle, CheckCircle2, ChevronRight, Search, MoreVertical, ArrowUpRight } from "lucide-react";
-import { LineChart, Line, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell } from "recharts";
+import { useState, useEffect, useCallback } from "react";
+import {
+  Users, Building2, DollarSign, CreditCard,
+  CheckCircle2, XCircle, Search, RefreshCw,
+  Shield, Bell,
+} from "lucide-react";
+import { admin, loans as loansApi, AdminUser, AdminLoan, AdminStats } from "@/lib/api";
+import { useAuth } from "@/contexts/AuthContext";
+import { clsx } from "clsx";
 
-const userGrowth = [
-  { month: "Oct", tenants: 6200, landlords: 520 }, { month: "Nov", tenants: 6800, landlords: 560 },
-  { month: "Dec", tenants: 7200, landlords: 590 }, { month: "Jan", tenants: 7700, landlords: 620 },
-  { month: "Feb", tenants: 8100, landlords: 650 }, { month: "Mar", tenants: 8500, landlords: 680 },
-];
-const revenueFlow = [
-  { month: "Oct", revenue: 12.4 }, { month: "Nov", revenue: 14.1 }, { month: "Dec", revenue: 15.8 },
-  { month: "Jan", revenue: 17.2 }, { month: "Feb", revenue: 19.5 }, { month: "Mar", revenue: 21.3 },
-];
-const loanStatusData = [
-  { name: "Approved", value: 45, color: "#22c55e" }, { name: "Pending", value: 28, color: "#f59e0b" },
-  { name: "Rejected", value: 12, color: "#ef4444" }, { name: "Paid", value: 15, color: "#3b82f6" },
-];
-const pendingActions = [
-  { id: 1, type: "Listing Approval", title: "5BR Villa – Muthaiga", user: "Peter Otieno", time: "2h ago", icon: Building2, color: "text-blue-500 bg-blue-50" },
-  { id: 2, type: "Loan Application", title: "KES 50,000 – Rent Loan", user: "Susan Njeri", time: "4h ago", icon: DollarSign, color: "text-green-500 bg-green-50" },
-  { id: 3, type: "Loan Application", title: "KES 85,000 – Rent Loan", user: "David Mwangi", time: "5h ago", icon: DollarSign, color: "text-green-500 bg-green-50" },
-  { id: 4, type: "Insurance Claim", title: "Claim #2089 – Basic Plan", user: "Mary Wambui", time: "1d ago", icon: Shield, color: "text-purple-500 bg-purple-50" },
-];
-const recentUsers = [
-  { name: "James Kamau", role: "Tenant", location: "Kilimani", score: 720, joined: "Today" },
-  { name: "Grace Wanjiku", role: "Landlord", location: "Westlands", score: null, joined: "Today" },
-  { name: "Susan Njeri", role: "Tenant", location: "Lavington", score: 640, joined: "Yesterday" },
-  { name: "Peter Otieno", role: "Landlord", location: "Karen", score: null, joined: "2 days ago" },
-  { name: "Fatima Ali", role: "Tenant", location: "Parklands", score: 695, joined: "3 days ago" },
-];
+type Tab = "overview" | "tenants" | "loans";
+type KycFilter = "ALL" | "PENDING" | "VERIFIED" | "REJECTED";
+type LoanStatusFilter = "ALL" | "PENDING" | "APPROVED" | "DISBURSED" | "REJECTED" | "REPAID";
+
+const KYC_LABELS: Record<string, string> = { PENDING: "Pending", VERIFIED: "Verified", REJECTED: "Rejected" };
+const LOAN_LABELS: Record<string, string> = { PENDING: "Pending", APPROVED: "Approved", DISBURSED: "Disbursed", REJECTED: "Rejected", REPAID: "Repaid" };
 
 export default function AdminDashboard() {
+  const { user } = useAuth();
+  const [tab, setTab] = useState<Tab>("overview");
+
+  const [stats, setStats] = useState<AdminStats | null>(null);
+  const [statsLoading, setStatsLoading] = useState(true);
+
+  // Tenants
+  const [tenants, setTenants] = useState<AdminUser[]>([]);
+  const [tenantsLoading, setTenantsLoading] = useState(false);
+  const [search, setSearch] = useState("");
+  const [kycFilter, setKycFilter] = useState<KycFilter>("ALL");
+
+  // Loans
+  const [loansList, setLoansList] = useState<AdminLoan[]>([]);
+  const [loansLoading, setLoansLoading] = useState(false);
+  const [loanFilter, setLoanFilter] = useState<LoanStatusFilter>("PENDING");
+
+  const [actionLoading, setActionLoading] = useState<string | null>(null);
+
+  const refreshStats = useCallback(() => {
+    admin.getStats().then(setStats).catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    setStatsLoading(true);
+    admin.getStats()
+      .then(setStats)
+      .catch(() => {})
+      .finally(() => setStatsLoading(false));
+  }, []);
+
+  const loadTenants = useCallback(() => {
+    setTenantsLoading(true);
+    admin
+      .getUsers({ role: "TENANT", search: search || undefined, limit: 100 })
+      .then((u) => setTenants(u))
+      .catch(() => {})
+      .finally(() => setTenantsLoading(false));
+  }, [search]);
+
+  const loadLoans = useCallback(() => {
+    setLoansLoading(true);
+    admin
+      .getLoans({ status: loanFilter !== "ALL" ? loanFilter : undefined, limit: 100 })
+      .then((l) => setLoansList(l))
+      .catch(() => {})
+      .finally(() => setLoansLoading(false));
+  }, [loanFilter]);
+
+  // Overview: always load pending tenants + pending loans
+  useEffect(() => {
+    if (tab === "overview") {
+      setTenantsLoading(true);
+      admin.getUsers({ role: "TENANT", limit: 100 })
+        .then(setTenants)
+        .catch(() => {})
+        .finally(() => setTenantsLoading(false));
+
+      setLoansLoading(true);
+      admin.getLoans({ status: "PENDING", limit: 100 })
+        .then(setLoansList)
+        .catch(() => {})
+        .finally(() => setLoansLoading(false));
+    }
+  }, [tab]);
+
+  useEffect(() => {
+    if (tab === "tenants") loadTenants();
+  }, [tab, loadTenants]);
+
+  useEffect(() => {
+    if (tab === "loans") loadLoans();
+  }, [tab, loadLoans]);
+
+  const handleKyc = async (userId: string, status: "VERIFIED" | "REJECTED") => {
+    setActionLoading(userId + status);
+    try {
+      await admin.updateUser(userId, { kycStatus: status });
+      setTenants((prev) => prev.map((u) => u.id === userId ? { ...u, kycStatus: status } : u));
+      refreshStats();
+    } catch {}
+    setActionLoading(null);
+  };
+
+  const handleLoan = async (loanId: string, status: "APPROVED" | "REJECTED" | "DISBURSED") => {
+    setActionLoading(loanId + status);
+    try {
+      await loansApi.updateStatus(loanId, { status });
+      setLoansList((prev) => prev.map((l) => l.id === loanId ? { ...l, status } : l));
+      refreshStats();
+    } catch {}
+    setActionLoading(null);
+  };
+
+  const pendingTenants = tenants.filter((t) => t.kycStatus === "PENDING");
+  const pendingLoans = loansList.filter((l) => l.status === "PENDING");
+
+  const filteredTenants = tenants.filter((t) => {
+    if (kycFilter !== "ALL" && t.kycStatus !== kycFilter) return false;
+    return true;
+  });
+
   return (
     <div className="min-h-screen bg-gray-50 page-content">
+      {/* Header */}
       <div className="bg-navy text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-5 sm:py-6">
           <div className="flex items-center justify-between gap-3">
-            <div className="min-w-0">
-              <p className="text-gray-400 text-xs sm:text-sm">Admin Control Panel</p>
-              <h1 className="text-xl sm:text-2xl font-bold truncate">Rentmo Admin 🛡️</h1>
+            <div>
+              <p className="text-gray-400 text-xs sm:text-sm flex items-center gap-1.5">
+                <Shield className="w-3.5 h-3.5" /> Admin Control Panel
+              </p>
+              <h1 className="text-xl sm:text-2xl font-bold mt-0.5">
+                Welcome, {user?.name?.split(" ")[0]}
+              </h1>
             </div>
-            <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-              <div className="relative hidden sm:block">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-                <input type="text" placeholder="Search users, properties..." className="pl-9 pr-4 py-2 bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-xl text-sm outline-none focus:bg-white/20 transition-colors w-40 lg:w-56" />
+            <div className="flex items-center gap-2">
+              {(pendingTenants.length > 0 || (stats?.pendingLoans ?? 0) > 0) && (
+                <div className="flex items-center gap-1.5 bg-primary/20 border border-primary/40 px-3 py-1.5 rounded-xl">
+                  <Bell className="w-4 h-4 text-primary" />
+                  <span className="text-sm font-medium">
+                    {pendingTenants.length + (stats?.pendingLoans ?? 0)} pending
+                  </span>
+                </div>
+              )}
+              <div className="w-9 h-9 bg-primary rounded-xl flex items-center justify-center font-bold text-sm">
+                {user?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
               </div>
-              <button className="relative p-2 rounded-xl border border-white/20 hover:bg-white/10 transition-colors">
-                <Bell className="w-5 h-5 text-white" />
-                <span className="absolute top-1 right-1 w-2 h-2 bg-primary rounded-full" />
-              </button>
-              <div className="w-8 h-8 sm:w-9 sm:h-9 bg-primary rounded-xl flex items-center justify-center font-bold text-xs sm:text-sm">AD</div>
             </div>
-          </div>
-          {/* Mobile search bar */}
-          <div className="mt-3 sm:hidden relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
-            <input type="text" placeholder="Search users, properties..." className="w-full pl-9 pr-4 py-2.5 bg-white/10 border border-white/20 text-white placeholder-gray-400 rounded-xl text-sm outline-none focus:bg-white/20 transition-colors" />
           </div>
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-5 mb-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6">
+        {/* Stats row */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
           {[
-            { label: "Total Users", value: "9,180", icon: Users, color: "text-blue-600 bg-blue-50", trend: "+12% MoM" },
-            { label: "Active Listings", value: "2,416", icon: Building2, color: "text-primary bg-primary/10", trend: "+8% MoM" },
-            { label: "Monthly Revenue", value: "KES 21.3M", icon: DollarSign, color: "text-green-600 bg-green-50", trend: "+9.2% MoM" },
-            { label: "Avg Credit Score", value: "672", icon: TrendingUp, color: "text-purple-600 bg-purple-50", trend: "+14 pts avg" },
-          ].map((stat) => (
-            <div key={stat.label} className="card">
-              <div className="flex items-start justify-between mb-3">
-                <div className={`w-10 h-10 rounded-xl ${stat.color} flex items-center justify-center`}><stat.icon className="w-5 h-5" /></div>
-                <ArrowUpRight className="w-4 h-4 text-green-500" />
+            {
+              label: "Total Users",
+              value: statsLoading ? "—" : (stats?.users.total ?? 0).toLocaleString(),
+              sub: statsLoading ? "" : `${stats?.users.byRole.TENANT ?? 0} tenants · ${stats?.users.byRole.LANDLORD ?? 0} landlords`,
+              icon: Users,
+              color: "text-blue-600 bg-blue-50",
+            },
+            {
+              label: "Properties",
+              value: statsLoading ? "—" : (stats?.properties.total ?? 0).toLocaleString(),
+              sub: statsLoading ? "" : `${stats?.properties.activeLeases ?? 0} active leases`,
+              icon: Building2,
+              color: "text-primary bg-primary/10",
+            },
+            {
+              label: "Total Revenue",
+              value: statsLoading ? "—" : `KES ${(((stats?.payments.totalAmountKES ?? 0)) / 1_000_000).toFixed(1)}M`,
+              sub: statsLoading ? "" : `${stats?.payments.total ?? 0} payments`,
+              icon: DollarSign,
+              color: "text-green-600 bg-green-50",
+            },
+            {
+              label: "Pending Loans",
+              value: statsLoading ? "—" : (stats?.pendingLoans ?? 0).toString(),
+              sub: statsLoading ? "" : `${stats?.pendingClaims ?? 0} pending insurance claims`,
+              icon: CreditCard,
+              color: "text-amber-600 bg-amber-50",
+            },
+          ].map((s) => (
+            <div key={s.label} className="card">
+              <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center mb-3`}>
+                <s.icon className="w-5 h-5" />
               </div>
-              <div className="text-2xl font-bold text-navy">{stat.value}</div>
-              <div className="text-xs text-gray-400 mt-1">{stat.label}</div>
-              <div className="text-xs text-green-600 font-medium mt-1">{stat.trend}</div>
+              <div className="text-2xl font-bold text-navy">{s.value}</div>
+              <div className="text-xs font-medium text-gray-500 mt-1">{s.label}</div>
+              <div className="text-xs text-gray-400 mt-0.5">{s.sub}</div>
             </div>
           ))}
         </div>
 
-        <div className="grid lg:grid-cols-3 gap-6">
-          <div className="lg:col-span-2 space-y-6">
-            <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-navy text-lg">Platform Revenue (KES Millions)</h2>
-                <span className="badge-green flex items-center gap-1"><TrendingUp className="w-3 h-3" /> +72% YoY</span>
-              </div>
-              <ResponsiveContainer width="100%" height={200}>
-                <AreaChart data={revenueFlow}>
-                  <defs>
-                    <linearGradient id="revGrad" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#1a2332" stopOpacity={0.2} />
-                      <stop offset="95%" stopColor="#1a2332" stopOpacity={0} />
-                    </linearGradient>
-                  </defs>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} tickFormatter={(v) => `${v}M`} />
-                  <Tooltip formatter={(v) => [`KES ${v}M`, "Revenue"]} />
-                  <Area type="monotone" dataKey="revenue" stroke="#1a2332" strokeWidth={2.5} fill="url(#revGrad)" />
-                </AreaChart>
-              </ResponsiveContainer>
-            </div>
+        {/* Tabs */}
+        <div className="flex gap-1 bg-gray-100 rounded-xl p-1 mb-6 w-fit">
+          {(["overview", "tenants", "loans"] as Tab[]).map((t) => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={clsx(
+                "px-4 py-2 rounded-lg text-sm font-medium transition-colors",
+                tab === t ? "bg-white text-navy shadow-sm" : "text-gray-500 hover:text-navy"
+              )}
+            >
+              {t === "tenants" ? (
+                <span className="flex items-center gap-1.5">
+                  Tenants
+                  {pendingTenants.length > 0 && (
+                    <span className="w-5 h-5 bg-primary text-white rounded-full text-xs flex items-center justify-center">
+                      {pendingTenants.length}
+                    </span>
+                  )}
+                </span>
+              ) : t === "loans" ? (
+                <span className="flex items-center gap-1.5">
+                  Loan Applications
+                  {(stats?.pendingLoans ?? 0) > 0 && (
+                    <span className="w-5 h-5 bg-amber-500 text-white rounded-full text-xs flex items-center justify-center">
+                      {stats?.pendingLoans}
+                    </span>
+                  )}
+                </span>
+              ) : (
+                "Overview"
+              )}
+            </button>
+          ))}
+        </div>
 
+        {/* ── Overview ─────────────────────────────────────────────────── */}
+        {tab === "overview" && (
+          <div className="grid lg:grid-cols-2 gap-6">
+            {/* Pending tenant approvals */}
             <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-navy text-lg">User Growth</h2>
-                <div className="flex items-center gap-4 text-xs text-gray-500">
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-primary rounded inline-block" />Tenants</span>
-                  <span className="flex items-center gap-1.5"><span className="w-3 h-1 bg-navy rounded inline-block" />Landlords</span>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-navy text-lg">Pending Tenant Approvals</h2>
+                {pendingTenants.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                    {pendingTenants.length} pending
+                  </span>
+                )}
+              </div>
+
+              {tenantsLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
                 </div>
-              </div>
-              <ResponsiveContainer width="100%" height={180}>
-                <LineChart data={userGrowth}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-                  <XAxis dataKey="month" tick={{ fontSize: 12, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                  <YAxis tick={{ fontSize: 11, fill: "#9ca3af" }} axisLine={false} tickLine={false} />
-                  <Tooltip />
-                  <Line type="monotone" dataKey="tenants" stroke="#E63946" strokeWidth={2.5} dot={false} />
-                  <Line type="monotone" dataKey="landlords" stroke="#1a2332" strokeWidth={2} dot={false} strokeDasharray="4 2" />
-                </LineChart>
-              </ResponsiveContainer>
+              ) : pendingTenants.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-400" />
+                  <p className="text-sm">All tenants are reviewed</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingTenants.slice(0, 6).map((t) => (
+                    <div key={t.id} className="flex items-center gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="w-9 h-9 bg-primary/10 text-primary rounded-xl flex items-center justify-center text-xs font-bold shrink-0">
+                        {t.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-navy truncate">{t.name}</p>
+                        <p className="text-xs text-gray-400 truncate">{t.email}</p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleKyc(t.id, "VERIFIED")}
+                          disabled={actionLoading === t.id + "VERIFIED"}
+                          className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleKyc(t.id, "REJECTED")}
+                          disabled={actionLoading === t.id + "REJECTED"}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingTenants.length > 6 && (
+                    <button onClick={() => setTab("tenants")} className="w-full text-center text-xs text-primary py-2 hover:underline">
+                      View all {pendingTenants.length} pending tenants →
+                    </button>
+                  )}
+                </div>
+              )}
             </div>
 
+            {/* Pending loan applications */}
             <div className="card">
-              <div className="flex items-center justify-between mb-5">
-                <h2 className="font-bold text-navy text-lg">Recent Registrations</h2>
-                <Link to="#" className="text-xs text-primary flex items-center gap-1 hover:underline">View All <ChevronRight className="w-3 h-3" /></Link>
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="font-bold text-navy text-lg">Pending Loan Applications</h2>
+                {pendingLoans.length > 0 && (
+                  <span className="px-2.5 py-1 rounded-full bg-amber-50 text-amber-700 text-xs font-semibold">
+                    {pendingLoans.length} pending
+                  </span>
+                )}
               </div>
+
+              {loansLoading ? (
+                <div className="flex justify-center py-10">
+                  <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+                </div>
+              ) : pendingLoans.length === 0 ? (
+                <div className="text-center py-10 text-gray-400">
+                  <CheckCircle2 className="w-10 h-10 mx-auto mb-2 text-green-400" />
+                  <p className="text-sm">No pending loan applications</p>
+                </div>
+              ) : (
+                <div className="space-y-3">
+                  {pendingLoans.slice(0, 6).map((loan) => (
+                    <div key={loan.id} className="flex items-start gap-3 p-3 rounded-xl border border-gray-100 hover:border-gray-200 transition-colors">
+                      <div className="w-9 h-9 bg-amber-50 text-amber-600 rounded-xl flex items-center justify-center text-xs font-bold shrink-0">
+                        {loan.tenant?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "?"}
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-sm font-medium text-navy">{loan.tenant?.name}</p>
+                        <p className="text-xs text-gray-500">
+                          KES {loan.amount.toLocaleString()}
+                          {loan.tenant?.creditScore?.score && (
+                            <span className="ml-1.5 text-gray-400">· Score: {loan.tenant.creditScore.score}</span>
+                          )}
+                        </p>
+                        <p className="text-xs text-gray-400 line-clamp-1 mt-0.5">{loan.purpose}</p>
+                      </div>
+                      <div className="flex gap-1.5 shrink-0">
+                        <button
+                          onClick={() => handleLoan(loan.id, "APPROVED")}
+                          disabled={!!actionLoading}
+                          className="px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Approve
+                        </button>
+                        <button
+                          onClick={() => handleLoan(loan.id, "REJECTED")}
+                          disabled={!!actionLoading}
+                          className="px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                        >
+                          Reject
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                  {pendingLoans.length > 6 && (
+                    <button onClick={() => setTab("loans")} className="w-full text-center text-xs text-primary py-2 hover:underline">
+                      View all {pendingLoans.length} pending loans →
+                    </button>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── Tenants ──────────────────────────────────────────────────── */}
+        {tab === "tenants" && (
+          <div className="card">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+              <div className="relative flex-1">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+                <input
+                  type="text"
+                  placeholder="Search by name or email..."
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                  className="w-full pl-9 pr-4 py-2.5 border border-gray-200 rounded-xl text-sm outline-none focus:border-primary/50 transition-colors"
+                />
+              </div>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["ALL", "PENDING", "VERIFIED", "REJECTED"] as KycFilter[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setKycFilter(f)}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      kycFilter === f ? "bg-navy text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {f === "ALL" ? "All" : KYC_LABELS[f]}
+                    {f === "PENDING" && pendingTenants.length > 0 && ` (${pendingTenants.length})`}
+                  </button>
+                ))}
+              </div>
+              <button
+                onClick={loadTenants}
+                className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors shrink-0"
+                title="Refresh"
+              >
+                <RefreshCw className={clsx("w-4 h-4 text-gray-400", tenantsLoading && "animate-spin")} />
+              </button>
+            </div>
+
+            {tenantsLoading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
+              </div>
+            ) : filteredTenants.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <Users className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No tenants found</p>
+              </div>
+            ) : (
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
                     <tr className="border-b border-gray-100">
-                      {["User", "Role", "Location", "Credit", "Joined", ""].map((h) => (
-                        <th key={h} className="text-left text-xs font-medium text-gray-400 pb-3">{h}</th>
+                      {["Tenant", "Phone", "KYC Status", "Leases", "Joined", "Actions"].map((h) => (
+                        <th key={h} className="text-left text-xs font-medium text-gray-400 pb-3 pr-4">{h}</th>
                       ))}
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-50">
-                    {recentUsers.map((u) => (
-                      <tr key={u.name} className="hover:bg-gray-50">
-                        <td className="py-3">
-                          <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center text-xs font-bold">{u.name.split(" ").map((n) => n[0]).join("")}</div>
-                            <span className="font-medium text-navy">{u.name}</span>
+                    {filteredTenants.map((t) => (
+                      <tr key={t.id} className="hover:bg-gray-50">
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-primary/10 text-primary rounded-lg flex items-center justify-center text-xs font-bold shrink-0">
+                              {t.name.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase()}
+                            </div>
+                            <div>
+                              <p className="font-medium text-navy">{t.name}</p>
+                              <p className="text-xs text-gray-400">{t.email}</p>
+                            </div>
                           </div>
                         </td>
-                        <td className="py-3"><span className={u.role === "Tenant" ? "badge-blue" : "badge-green"}>{u.role}</span></td>
-                        <td className="py-3 text-gray-500">{u.location}</td>
-                        <td className="py-3">{u.score != null ? <span className="font-medium text-navy">{u.score}</span> : <span className="text-gray-300">—</span>}</td>
-                        <td className="py-3 text-gray-400 text-xs">{u.joined}</td>
-                        <td className="py-3"><button className="text-gray-300 hover:text-gray-600 transition-colors"><MoreVertical className="w-4 h-4" /></button></td>
+                        <td className="py-3 pr-4 text-gray-500">{t.phone || "—"}</td>
+                        <td className="py-3 pr-4">
+                          <span className={clsx(
+                            "px-2.5 py-1 rounded-full text-xs font-semibold",
+                            t.kycStatus === "VERIFIED" ? "bg-green-50 text-green-700" :
+                            t.kycStatus === "REJECTED" ? "bg-red-50 text-red-600" :
+                            "bg-amber-50 text-amber-700"
+                          )}>
+                            {KYC_LABELS[t.kycStatus]}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-500">{t._count?.leases ?? 0}</td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs whitespace-nowrap">
+                          {new Date(t.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="py-3">
+                          {t.kycStatus === "PENDING" ? (
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleKyc(t.id, "VERIFIED")}
+                                disabled={actionLoading === t.id + "VERIFIED"}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                              </button>
+                              <button
+                                onClick={() => handleKyc(t.id, "REJECTED")}
+                                disabled={actionLoading === t.id + "REJECTED"}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                              >
+                                <XCircle className="w-3.5 h-3.5" /> Reject
+                              </button>
+                            </div>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
                       </tr>
                     ))}
                   </tbody>
                 </table>
               </div>
-            </div>
+            )}
           </div>
+        )}
 
-          <div className="space-y-6">
-            <div className="card">
-              <h2 className="font-bold text-navy text-lg mb-5">Loan Portfolio</h2>
-              <div className="flex justify-center mb-4">
-                <PieChart width={160} height={160}>
-                  <Pie data={loanStatusData} cx={75} cy={75} innerRadius={50} outerRadius={75} paddingAngle={3} dataKey="value">
-                    {loanStatusData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                  </Pie>
-                </PieChart>
-              </div>
-              <div className="space-y-2">
-                {loanStatusData.map((item) => (
-                  <div key={item.name} className="flex items-center justify-between text-sm">
-                    <div className="flex items-center gap-2"><div className="w-3 h-3 rounded-full" style={{ backgroundColor: item.color }} /><span className="text-gray-600">{item.name}</span></div>
-                    <span className="font-semibold text-navy">{item.value}</span>
-                  </div>
+        {/* ── Loan Applications ────────────────────────────────────────── */}
+        {tab === "loans" && (
+          <div className="card">
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 mb-5">
+              <h2 className="font-bold text-navy text-lg flex-1">Loan Applications</h2>
+              <div className="flex gap-1.5 flex-wrap">
+                {(["ALL", "PENDING", "APPROVED", "DISBURSED", "REJECTED", "REPAID"] as LoanStatusFilter[]).map((f) => (
+                  <button
+                    key={f}
+                    onClick={() => setLoanFilter(f)}
+                    className={clsx(
+                      "px-3 py-1.5 rounded-lg text-xs font-medium transition-colors",
+                      loanFilter === f ? "bg-navy text-white" : "bg-gray-100 text-gray-600 hover:bg-gray-200"
+                    )}
+                  >
+                    {f === "ALL" ? "All" : LOAN_LABELS[f]}
+                  </button>
                 ))}
               </div>
+              <button
+                onClick={loadLoans}
+                className="p-2.5 rounded-xl border border-gray-200 hover:bg-gray-50 transition-colors shrink-0"
+                title="Refresh"
+              >
+                <RefreshCw className={clsx("w-4 h-4 text-gray-400", loansLoading && "animate-spin")} />
+              </button>
             </div>
 
-            <div className="card">
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="font-bold text-navy text-lg">Pending Actions</h2>
-                <span className="badge-yellow">{pendingActions.length}</span>
+            {loansLoading ? (
+              <div className="flex justify-center py-16">
+                <div className="w-8 h-8 border-4 border-primary/20 border-t-primary rounded-full animate-spin" />
               </div>
-              <div className="space-y-3">
-                {pendingActions.map((action) => (
-                  <div key={action.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer border border-gray-100 hover:border-gray-200">
-                    <div className={`w-8 h-8 rounded-lg ${action.color} flex items-center justify-center shrink-0`}><action.icon className="w-4 h-4" /></div>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-xs font-semibold text-gray-400 uppercase tracking-wide">{action.type}</p>
-                      <p className="text-sm font-medium text-navy leading-snug mt-0.5">{action.title}</p>
-                      <p className="text-xs text-gray-400">{action.user} · {action.time}</p>
-                    </div>
-                    <div className="flex gap-1 shrink-0">
-                      <button className="p-1 rounded-lg bg-green-50 text-green-600 hover:bg-green-100"><CheckCircle2 className="w-4 h-4" /></button>
-                      <button className="p-1 rounded-lg bg-red-50 text-red-500 hover:bg-red-100"><AlertCircle className="w-4 h-4" /></button>
-                    </div>
-                  </div>
-                ))}
+            ) : loansList.length === 0 ? (
+              <div className="text-center py-16 text-gray-400">
+                <DollarSign className="w-12 h-12 mx-auto mb-3 opacity-30" />
+                <p>No loan applications found</p>
               </div>
-            </div>
-
-            <div className="card bg-green-50 border border-green-100">
-              <div className="flex items-center gap-2 mb-3"><div className="w-2.5 h-2.5 bg-green-500 rounded-full animate-pulse" /><h2 className="font-bold text-green-800">System Healthy</h2></div>
-              <div className="space-y-2">
-                {[["API Response", "98ms"], ["M-Pesa Gateway", "Online"], ["Card Payments", "Online"], ["SMS Service", "Online"]].map(([label, value]) => (
-                  <div key={label} className="flex justify-between text-xs">
-                    <span className="text-green-700">{label}</span>
-                    <span className="text-green-600 font-medium">{value}</span>
-                  </div>
-                ))}
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-gray-100">
+                      {["Applicant", "Amount", "Purpose", "Credit Score", "Status", "Applied", "Actions"].map((h) => (
+                        <th key={h} className="text-left text-xs font-medium text-gray-400 pb-3 pr-4">{h}</th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-50">
+                    {loansList.map((loan) => (
+                      <tr key={loan.id} className="hover:bg-gray-50">
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2.5">
+                            <div className="w-8 h-8 bg-amber-50 text-amber-600 rounded-lg flex items-center justify-center text-xs font-bold shrink-0">
+                              {loan.tenant?.name?.split(" ").map((n) => n[0]).join("").slice(0, 2).toUpperCase() ?? "?"}
+                            </div>
+                            <div>
+                              <p className="font-medium text-navy">{loan.tenant?.name}</p>
+                              <p className="text-xs text-gray-400">{loan.tenant?.email}</p>
+                            </div>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <p className="font-semibold text-navy">KES {loan.amount.toLocaleString()}</p>
+                          {loan.monthlyRepayment && (
+                            <p className="text-xs text-gray-400">{loan.monthlyRepayment.toLocaleString()}/mo</p>
+                          )}
+                        </td>
+                        <td className="py-3 pr-4 text-gray-600 max-w-[160px]">
+                          <span className="line-clamp-2">{loan.purpose}</span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          {loan.tenant?.creditScore?.score != null ? (
+                            <span className={clsx(
+                              "font-semibold",
+                              loan.tenant.creditScore.score >= 700 ? "text-green-600" :
+                              loan.tenant.creditScore.score >= 600 ? "text-amber-600" : "text-red-500"
+                            )}>
+                              {loan.tenant.creditScore.score}
+                            </span>
+                          ) : <span className="text-gray-300">—</span>}
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span className={clsx(
+                            "px-2.5 py-1 rounded-full text-xs font-semibold",
+                            loan.status === "APPROVED" ? "bg-green-50 text-green-700" :
+                            loan.status === "DISBURSED" ? "bg-blue-50 text-blue-700" :
+                            loan.status === "REJECTED" ? "bg-red-50 text-red-600" :
+                            loan.status === "REPAID" ? "bg-gray-100 text-gray-600" :
+                            "bg-amber-50 text-amber-700"
+                          )}>
+                            {LOAN_LABELS[loan.status]}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4 text-gray-400 text-xs whitespace-nowrap">
+                          {new Date(loan.createdAt).toLocaleDateString("en-KE", { day: "numeric", month: "short", year: "numeric" })}
+                        </td>
+                        <td className="py-3">
+                          {loan.status === "PENDING" ? (
+                            <div className="flex gap-1.5">
+                              <button
+                                onClick={() => handleLoan(loan.id, "APPROVED")}
+                                disabled={!!actionLoading}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-green-50 text-green-700 hover:bg-green-100 text-xs font-medium transition-colors disabled:opacity-50"
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" /> Approve
+                              </button>
+                              <button
+                                onClick={() => handleLoan(loan.id, "REJECTED")}
+                                disabled={!!actionLoading}
+                                className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-red-50 text-red-600 hover:bg-red-100 text-xs font-medium transition-colors disabled:opacity-50"
+                              >
+                                <XCircle className="w-3.5 h-3.5" /> Reject
+                              </button>
+                            </div>
+                          ) : loan.status === "APPROVED" ? (
+                            <button
+                              onClick={() => handleLoan(loan.id, "DISBURSED")}
+                              disabled={!!actionLoading}
+                              className="flex items-center gap-1 px-2.5 py-1.5 rounded-lg bg-blue-50 text-blue-700 hover:bg-blue-100 text-xs font-medium transition-colors disabled:opacity-50"
+                            >
+                              Mark Disbursed
+                            </button>
+                          ) : (
+                            <span className="text-xs text-gray-300">—</span>
+                          )}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
               </div>
-            </div>
+            )}
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

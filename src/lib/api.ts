@@ -286,6 +286,8 @@ export const loans = {
   apply: (data: { amount: number; purpose: string }) =>
     request<LoanApplication>("/loans", { method: "POST", body: JSON.stringify(data) }),
   getById: (id: string) => request<LoanApplication>(`/loans/${id}`),
+  updateStatus: (id: string, data: { status: "APPROVED" | "DISBURSED" | "REJECTED" | "REPAID"; notes?: string }) =>
+    request<LoanApplication>(`/loans/${id}/status`, { method: "PATCH", body: JSON.stringify(data) }),
 };
 
 // ─── Insurance ────────────────────────────────────────────────────────────────
@@ -390,18 +392,50 @@ export const notifications = {
 
 // ─── Admin ────────────────────────────────────────────────────────────────────
 
+export interface AdminStats {
+  users: { total: number; byRole: { TENANT?: number; LANDLORD?: number; ADMIN?: number } };
+  properties: { total: number; activeLeases: number };
+  payments: { total: number; totalAmountKES: number };
+  pendingLoans: number;
+  pendingClaims: number;
+}
+
+export interface AdminUser {
+  id: string;
+  name: string;
+  email: string;
+  phone?: string;
+  role: "TENANT" | "LANDLORD" | "ADMIN";
+  kycStatus: "PENDING" | "VERIFIED" | "REJECTED";
+  createdAt: string;
+  _count: { leases: number; payments: number };
+}
+
+export interface AdminLoan {
+  id: string;
+  amount: number;
+  purpose: string;
+  status: "PENDING" | "APPROVED" | "DISBURSED" | "REJECTED" | "REPAID";
+  monthlyRepayment?: number;
+  interestRate: number;
+  notes?: string;
+  disbursedAt?: string;
+  createdAt: string;
+  tenant: { id: string; name: string; email: string; creditScore?: { score: number } };
+}
+
 export const admin = {
-  getStats: () => request<unknown>("/admin/stats"),
-  getUsers: (params?: { page?: number; role?: string; search?: string }) => {
+  getStats: () => request<AdminStats>("/admin/stats"),
+  getUsers: (params?: { page?: number; limit?: number; role?: string; search?: string }) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
         Object.entries(params || {}).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
       )
     ).toString();
-    return request<User[]>(`/admin/users${qs ? `?${qs}` : ""}`);
+    return request<AdminUser[]>(`/admin/users${qs ? `?${qs}` : ""}`);
   },
   updateUser: (id: string, data: { role?: string; kycStatus?: string }) =>
-    request<User>(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
+    request<AdminUser>(`/admin/users/${id}`, { method: "PATCH", body: JSON.stringify(data) }),
   getPayments: (params?: { page?: number; status?: string }) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
@@ -410,13 +444,13 @@ export const admin = {
     ).toString();
     return request<Payment[]>(`/admin/payments${qs ? `?${qs}` : ""}`);
   },
-  getLoans: (params?: { page?: number; status?: string }) => {
+  getLoans: (params?: { page?: number; limit?: number; status?: string }) => {
     const qs = new URLSearchParams(
       Object.fromEntries(
         Object.entries(params || {}).filter(([, v]) => v !== undefined).map(([k, v]) => [k, String(v)])
       )
     ).toString();
-    return request<LoanApplication[]>(`/admin/loans${qs ? `?${qs}` : ""}`);
+    return request<AdminLoan[]>(`/admin/loans${qs ? `?${qs}` : ""}`);
   },
   getClaims: () => request<InsuranceClaim[]>("/admin/claims"),
 };
