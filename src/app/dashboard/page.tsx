@@ -1,4 +1,5 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { clsx } from "clsx";
 import { Link } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import {
@@ -95,15 +96,25 @@ export default function TenantDashboard() {
   const [notifs, setNotifs] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
 
+  const loadNotifs = useCallback(() => {
+    notificationsApi.list().then(setNotifs).catch(() => {});
+  }, []);
+
   useEffect(() => {
     Promise.all([
       usersApi.getDashboard() as Promise<DashboardData>,
       notificationsApi.list().catch(() => [] as Notification[]),
     ]).then(([dash, notifList]) => {
       setDashboard(dash);
-      setNotifs(notifList.slice(0, 3));
+      setNotifs(notifList);
     }).finally(() => setLoading(false));
   }, []);
+
+  // Poll for new notifications every 20 seconds
+  useEffect(() => {
+    const interval = setInterval(loadNotifs, 20000);
+    return () => clearInterval(interval);
+  }, [loadNotifs]);
 
   const firstName = (user?.name ?? "").split(" ")[0] || "there";
   const initials = (user?.name ?? "")
@@ -118,7 +129,17 @@ export default function TenantDashboard() {
   const activeLease = dashboard?.activeLease ?? null;
   const monthlyRent = activeLease?.monthlyRent ?? 0;
   const equityPct = activeLease?.equityBuilt ?? 0;
-  const unreadCount = dashboard?.unreadNotifications ?? notifs.filter((n) => !n.read).length;
+  const unreadCount = notifs.filter((n) => !n.read).length;
+
+  const handleMarkRead = async (id: string) => {
+    await notificationsApi.markRead(id).catch(() => {});
+    setNotifs((prev) => prev.map((n) => n.id === id ? { ...n, read: true } : n));
+  };
+
+  const handleMarkAllRead = async () => {
+    await notificationsApi.markAllRead().catch(() => {});
+    setNotifs((prev) => prev.map((n) => ({ ...n, read: true })));
+  };
 
   const creditHistory = (dashboard?.creditScore?.history ?? [])
     .slice(-6)
@@ -377,19 +398,44 @@ export default function TenantDashboard() {
             <div className="card">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="font-bold text-navy text-lg">Notifications</h2>
-                {unreadCount > 0 && <span className="badge-red">{unreadCount} new</span>}
+                {unreadCount > 0 ? (
+                  <button
+                    onClick={handleMarkAllRead}
+                    className="text-xs text-primary hover:underline"
+                  >
+                    Mark all read ({unreadCount})
+                  </button>
+                ) : (
+                  <span className="text-xs text-green-600 font-medium">All read</span>
+                )}
               </div>
               {notifs.length > 0 ? (
-                <div className="space-y-3">
+                <div className="space-y-2 max-h-[420px] overflow-y-auto pr-1">
                   {notifs.map((n) => {
                     const { icon: Icon, color } = notifStyle(n.type);
                     return (
-                      <div key={n.id} className="flex items-start gap-3 p-3 rounded-xl hover:bg-gray-50 transition-colors cursor-pointer">
+                      <div
+                        key={n.id}
+                        onClick={() => !n.read && handleMarkRead(n.id)}
+                        className={clsx(
+                          "flex items-start gap-3 p-3 rounded-xl transition-colors cursor-pointer border",
+                          n.read
+                            ? "hover:bg-gray-50 border-transparent"
+                            : "bg-primary/5 border-primary/20 hover:bg-primary/10"
+                        )}
+                      >
                         <div className={`w-8 h-8 rounded-lg ${color} flex items-center justify-center shrink-0`}>
                           <Icon className="w-4 h-4" />
                         </div>
                         <div className="min-w-0 flex-1">
-                          <p className="text-sm font-medium text-navy leading-snug">{n.title}</p>
+                          <div className="flex items-start justify-between gap-1">
+                            <p className={clsx("text-sm leading-snug", n.read ? "font-medium text-navy" : "font-semibold text-navy")}>
+                              {n.title}
+                            </p>
+                            {!n.read && (
+                              <span className="w-2 h-2 rounded-full bg-primary shrink-0 mt-1.5" />
+                            )}
+                          </div>
                           <p className="text-xs text-gray-400 mt-0.5 leading-snug">{n.message}</p>
                           <div className="flex items-center gap-1 mt-1">
                             <Clock className="w-3 h-3 text-gray-300" />

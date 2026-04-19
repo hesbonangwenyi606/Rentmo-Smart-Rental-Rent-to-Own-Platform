@@ -114,10 +114,20 @@ export async function updateUser(req: Request, res: Response) {
     await prisma.notification.create({
       data: {
         userId: req.params.id,
-        title: "KYC Verified!",
+        title: "Identity Verified ✓",
         message:
           "Your identity has been verified. You can now access all Rentmo features including rent loans.",
         type: "success",
+      },
+    });
+  } else if (parsed.data.kycStatus === "REJECTED") {
+    await prisma.notification.create({
+      data: {
+        userId: req.params.id,
+        title: "KYC Verification Rejected",
+        message:
+          "Your identity verification was not approved. Please contact support or re-submit your documents.",
+        type: "error",
       },
     });
   }
